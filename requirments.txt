@@ -1,0 +1,5 @@
+matplotlib>=3.6.2
+numpy>=1.23.4
+klayout>=0.28.6
+pyaedt>=0.6.57
+pyvista>=0.38.5
