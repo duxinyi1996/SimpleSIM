@@ -1,23 +1,23 @@
+#!/usr/bin/python
+import os,sys
+folder_path = os.getcwd()
+if folder_path not in sys.path:
+  sys.path.append(folder_path) # easier to open driver files as long as Simple_DAQ.py is in the same folder with drivers
 import os
 import time
 from datetime import datetime
 import pyaedt
-
 import numpy as np
-
+from dxf_compiler import *
 
 class HFSS:
     def __init__(self, project_name):
-        self.non_graphical = False
         self.project_name = project_name
-        self.desktop = pyaedt.Desktop(non_graphical=self.non_graphical, new_desktop_session=False, close_on_exit=False,
-                       student_version=False)
-        self.desktop.disable_autosave()
-        self.q = pyaedt.Hfss(projectname=self.project_name)
-        self.modeler = self.q.modeler
-        self.unit = 'um'
-        self.modeler.model_units = self.unit
-
+        self.startup()
+        
+        self.gnd = []
+        self.cpw = []
+        self.DCleads = []
         # Tunable constant
         self.sub_size_x = 8000
         self.sub_size_y = 8000
@@ -60,18 +60,34 @@ class HFSS:
 
         self.DC_bond_x = 280
         self.DC_bond_y = 300
-
+        
+    def startup(self):
+        self.non_graphical = False
+        self.desktop = pyaedt.Desktop(non_graphical=self.non_graphical, new_desktop_session=False, close_on_exit=False,
+                       student_version=False)
+        self.q = pyaedt.Hfss(projectname=self.project_name)
+        self.modeler = self.q.modeler
+        self.unit = 'um'
+        self.modeler.model_units = self.unit
+        self.desktop.disable_autosave()
+        
     def substrate(self, cen_x=0, cen_y=0, dx=4000, dy=4000, up_z=0, name='Si'):
         up_z = -self.metal_thickness/2
         position = [cen_x - dx, cen_y - dy, up_z]
         size = [2 * dx, 2 * dy, -self.sub_thickness]
         self.substrate = self.modeler.create_box(
-            position, size,
+            position=position, dimensions_list=size,
             name=f"{name}",
             matname=f"{self.sub_name}")
-        self.modeler[f"{name}"].color = (128, 128, 128)
-        self.modeler[f"{name}"].transparency = 0.8
-        return self.modeler[f"{name}"]
+        color = (128, 128, 128)
+        transparency = 0.8
+        self.set_appearance(name,color,transparency)
+    
+    # Basic_element: Change color
+    def set_appearance(self,name,color,transparency):
+        obj = self.modeler[f"{name}"]
+        obj.color = color
+        obj.transparency = transparency
 
     # Basic_element: line
     def line(self, start_x, start_y, end_x, end_y, width, bottom_z=0, name=None):
@@ -91,11 +107,12 @@ class HFSS:
         end_point = [end_x, end_y, bottom_z]
         cen_x = start_x + end_x - turning_x
         cen_y = start_y + end_y - turning_y
+        center_point = [end_x, end_y, bottom_z]
         dx = turning_x - cen_x
         dy = turning_y - cen_y
-        center_point = [cen_x + dx/np.sqrt(2),cen_y + dy/np.sqrt(2), bottom_z]
+        mid_point = [cen_x + dx/np.sqrt(2),cen_y + dy/np.sqrt(2), bottom_z]
         line = self.modeler.create_polyline(
-            [start_point,center_point,end_point],
+            [start_point,mid_point,end_point],
             segment_type='Arc',
             name=newname(name),
             matname=f"{self.metal_name}",
@@ -171,7 +188,6 @@ class HFSS:
     def CPW_line(self, x_list, y_list, width, gap, radius=0.0, name=None):
         center_line = self.Polyline(x_list, y_list, radius, width, name=name)
         trench = self.Polyline(x_list, y_list, radius, width + gap * 2, name=name+'_trench')
-
         return center_line,trench
 
     # Advance_element: taper CPW lines
@@ -211,8 +227,6 @@ class HFSS:
                                              width_list=[self.feedline_width, self.bond_pad_size],
                                              gap_list=[self.feedline_gap, new_gap],
                                              direction=direction)
-
-
         bond, bond_tren = self.CPW_line(
             x_list=[self.port_end_x, newx],
             y_list=[self.port_end_y, newy],
@@ -222,7 +236,8 @@ class HFSS:
         bond_open = self.line(start_x=self.port_start_x, start_y=self.port_start_y,
                               end_x=self.port_end_x, end_y=self.port_end_y,
                               width=self.bond_pad_size + new_gap*2)
-        center_line = self.modeler.unite([taper,bond])
+
+        center_line = self.modeler.unite([taper, bond])
         trench = self.modeler.unite([taper_tren, bond_tren, bond_open])
         self.port()
         return center_line,trench
@@ -276,7 +291,7 @@ class HFSS:
                                             gap=self.feedline_gap,
                                             radius=self.feedline_radius,
                                             name='feedline')
-        cen1, tren1 = self.Bond_pad(x_list[0],y_list[0])
+        cen1, tren1 = self.Bond_pad(x_list[0], y_list[0])
         cen2, tren2 = self.Bond_pad(x_list[-1], y_list[-1])
         center_line = self.modeler.unite([center_line, cen1, cen2])
         trench = self.modeler.unite([trench, tren1, tren2])
@@ -331,20 +346,19 @@ class HFSS:
         return center, trench
 
     # Modeler_sum: build_chip design
-    def Build_all(self):
+    def Build_all(self,lead_number = 0):
         self.toBeRemove = []
         self.toBeAdd = []
-        self.toBeMesh = []
         # Draw Substrate
         self.substrate(dx=self.sub_size_x/2, dy=self.sub_size_x/2)
-        self.q.modeler.create_airbox(offset=10, offset_type="Relative")
+        self.modeler.create_airbox(offset=10, offset_type="Relative")
         # Draw Gnd
-        Gnd = self.line(-self.sub_size_x/2, 0, self.sub_size_x/2, 0, width=self.sub_size_y, name='Gnd')
+        self.gnd = [self.line(-self.sub_size_x/2, 0, self.sub_size_x/2, 0, width=self.sub_size_y, name='Gnd')]
         # Draw feedline
         x_list, y_list = construct(-3000, 3000, 'x6000,y-6000,x-6000')
         feed_cen, feed_tren = self.Feedline(x_list=x_list, y_list=y_list)
         self.toBeRemove += [feed_tren]
-        self.toBeMesh += [feed_cen]
+        self.feedline = [feed_cen]
         # Draw resonator
         def draw_reson(lshort,x,y):
             self.reson_l_short = lshort
@@ -357,8 +371,6 @@ class HFSS:
                                  width=self.open_end_size_x)
             self.toBeRemove += [tren, open_end]
             self.toBeAdd += [cen]
-            self.toBeMesh += [cen]
-            lead_number = 0
             for i in range(lead_number):
                 x1 = self.open_end_x + (2*i-lead_number+1)/2*(self.open_end_size_x/lead_number)
                 x2 = self.open_end_x + (2*i-lead_number+1)/2* 280
@@ -384,35 +396,37 @@ class HFSS:
                 DC_lead, DC_lead_tren = self.DC_filter(x2,y2)
                 DC_lead_sum = self.modeler.unite([DC_lead, taper, connect])
                 self.toBeRemove += [taper_tren, DC_lead_tren, connect_tren]
-                self.toBeMesh += [DC_lead_sum]
-                self.save()
+                self.DCleads += [DC_lead_sum]
+                self.tempsave()
 
 
-        # draw_reson(lshort=2750, x=-1500, y=3000)
-        # draw_reson(lshort=3000, x=1500, y=3000)
+
+        draw_reson(lshort=2750, x=-1500, y=3000)
+        draw_reson(lshort=3000, x=1500, y=3000)
         draw_reson(lshort=3250, x=-1500, y=-3000)
-        # draw_reson(lshort=3500, x=1500, y=-3000)
-
-        self.modeler.subtract([Gnd], self.toBeRemove, keep_originals=False)
-        self.modeler.unite(self.toBeAdd)
+        draw_reson(lshort=3500, x=1500, y=-3000)
+        self.gnd = self.modeler.subtract(self.gnd, self.toBeRemove, keep_originals=False)
+        self.cpw = self.modeler.unite(self.toBeAdd)
         self.save()
 
-    def Build_part(self):
+    def Build_part(self,lead_number = 0):
         self.sub_size_x = 4000
         self.sub_size_y = 4000
         self.toBeRemove = []
         self.toBeAdd = []
-        self.toBeMesh = []
         # Draw Substrate
         self.substrate(dx=self.sub_size_x / 2, dy=self.sub_size_y / 2)
-        self.q.modeler.create_airbox(offset=10, offset_type="Relative")
+        self.modeler.create_airbox(offset=10, offset_type="Relative")
+        print('substrate created')
         # Draw Gnd
-        Gnd = self.line(-self.sub_size_x / 2, 0, self.sub_size_x / 2, 0, width=self.sub_size_y, name='Gnd')
+        self.gnd = [self.line(-self.sub_size_x / 2, 0, self.sub_size_x / 2, 0, width=self.sub_size_y, name='Gnd')]
+        print('ground created')
         # Draw feedline
         x_list, y_list = construct(-1000, 1500, 'x2000')
         feed_cen, feed_tren = self.Feedline(x_list=x_list, y_list=y_list)
+        print('feedline created')
         self.toBeRemove += [feed_tren]
-        self.toBeMesh += [feed_cen]
+        self.feedline = [feed_cen]
 
         # Draw resonator
         def draw_reson(lshort, x, y):
@@ -426,8 +440,7 @@ class HFSS:
                                  width=self.open_end_size_x)
             self.toBeRemove += [tren, open_end]
             self.toBeAdd += [cen]
-            self.toBeMesh += [cen]
-            lead_number = 0
+
             for i in range(lead_number):
                 x1 = self.open_end_x + (2 * i - lead_number + 1) / 2 * (self.open_end_size_x / lead_number)
                 x2 = self.open_end_x + (2 * i - lead_number + 1) / 2 * 280
@@ -453,15 +466,19 @@ class HFSS:
                 DC_lead, DC_lead_tren = self.DC_filter(x2, y2)
                 DC_lead_sum = self.modeler.unite([DC_lead, taper, connect])
                 self.toBeRemove += [taper_tren, DC_lead_tren, connect_tren]
-                self.toBeMesh += [DC_lead_sum]
-                self.save()
+                self.DCleads += [DC_lead_sum]
+                self.tempsave()
 
         draw_reson(lshort=3250, x=0, y=1500)
-        self.modeler.subtract([Gnd], self.toBeRemove, keep_originals=False)
-        self.modeler.unite(self.toBeAdd)
+        self.gnd = self.modeler.subtract(self.gnd, self.toBeRemove, keep_originals=False)
+        self.cpw = self.modeler.unite(self.toBeAdd)
         self.save()
 
     def save(self):
+        self.q.save_project()
+        self.desktop.enable_autosave()
+
+    def tempsave(self):
         self.q.save_project()
 
 
@@ -567,16 +584,5 @@ def newname(name):
     return name
 
 
-
-
-folder_path = r'C:\Users\duxin\OneDrive - Washington University in St. Louis\wustl\2023 Spring\hfss\test'
-file_name = 'reson_only'
-project_name = os.path.join(folder_path, file_name)
-start = time.time()
-h = HFSS(project_name)
-h.Build_part()
-h.desktop.enable_autosave()
-# h.desktop.release_desktop()
-print(time.time()-start)
 
 
