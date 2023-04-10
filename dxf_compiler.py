@@ -14,6 +14,7 @@ import numpy as np
 
 class DXF(HFSS):
     def startup(self):
+        self.trap = True
         self.q = db.Layout()
         self.unit = 1E-6    # data were in 1um unit
         self.q.dbu = 1E-9/self.unit     # sets the database precision 50nm,
@@ -106,13 +107,14 @@ class DXF(HFSS):
         safe = 150
         d = 10
         s = 3
-        region1 = self.gnd[0].sized(-safe/self.q.dbu)
-        region2 = (self.gnd[1].snapped(d/self.q.dbu, d/self.q.dbu)).sized(safe/self.q.dbu)
-        region = (region1 - region2).merge()
+        if self.trap:
+            region1 = self.gnd[0].sized(-safe/self.q.dbu)
+            region2 = (self.gnd[1].snapped(d/self.q.dbu, d/self.q.dbu)).sized(safe/self.q.dbu)
+            region = (region1 - region2).merge()
 
-        real = create_trap(d, s) & region
-        self.mylist += [real]
-        self.taglist += ['Trap']
+            real = create_trap(d, s) & region
+            self.mylist += [real]
+            self.taglist += ['Trap']
 
     def save(self):
         def draw(tag, items):
@@ -127,7 +129,6 @@ class DXF(HFSS):
                   self.DCleads]
         self.taglist = ['GND', 'Feedline', 'Reson', 'DCleads']
         self.add_trap()
-
         for i in range(0, len(self.mylist)):
             draw(self.taglist[i], self.mylist[i])
         if '.dxf' not in self.project_name:

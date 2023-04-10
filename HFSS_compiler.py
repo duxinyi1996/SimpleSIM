@@ -24,17 +24,20 @@ class HFSS:
         self.sub_thickness = 275
         self.sub_name = 'silicon'
         self.metal_thickness = 80E-3
-        self.metal_name = 'gold'
+        self.metal_name = 'perfect conductor'
 
-        self.meander_xlen = 500
-        self.meander_ylen = 50
+
+        self.meander_xlen = 300
+        self.meander_ylen = 60
         self.meander_radius = 20
 
         self.feedline_width = 15
         self.feedline_gap = 9
         self.feedline_radius = 100
-        self.taper_l = 240
-        self.bond_pad_size = 300
+        # self.taper_l = 240
+        # self.bond_pad_size = 300
+        self.taper_l = 10
+        self.bond_pad_size = 15
 
         self.reson_l_short = 3000
         self.reson_l_couple = 425
@@ -63,7 +66,7 @@ class HFSS:
         
     def startup(self):
         self.non_graphical = False
-        self.desktop = pyaedt.Desktop(non_graphical=self.non_graphical, new_desktop_session=False, close_on_exit=False,
+        self.desktop = pyaedt.Desktop(non_graphical=self.non_graphical, new_desktop_session=True, close_on_exit=False,
                        student_version=False)
         self.q = pyaedt.Hfss(projectname=self.project_name)
         self.modeler = self.q.modeler
@@ -266,20 +269,23 @@ class HFSS:
     def CPW_reson(self,x,y):
         start_x = -self.reson_l_couple / 2 + x
         start_y = (self.feedline_width / 2 + self.feedline_gap + self.reson_couple_d) + self.reson_gap + self.reson_width / 2 + self.reson_l_open
-        ylen = self.meander_ylen
         start_y = - start_y * np.sign(y) + y
-        ylen = - ylen * np.sign(y)
 
         if self.reson_l_couple-300 < self.meander_xlen:
             xlen_list = [self.reson_l_couple-300, self.meander_xlen]
         else:
-            xlen_list = [self.meander_xlen]
+            xlen_list = [self.meander_xlen, self.meander_xlen]
+
+        if self.meander_ylen < 100:
+            ylen_list = [- np.sign(y) * 100, - np.sign(y) * self.meander_ylen]
+        else:
+            ylen_list = [- np.sign(y) * self.meander_ylen, - np.sign(y) * self.meander_ylen]
 
         self.open_end_x = start_x
         self.open_end_y = start_y
         command = f'y{self.reson_l_open * np.sign(y)},'
         command += f'x{self.reson_l_couple},'
-        command += meander(self.reson_l_short, xlen_list=xlen_list, ylen=ylen)
+        command += meander(self.reson_l_short, xlen_list=xlen_list, ylen_list=ylen_list)
         x_list, y_list = construct(start_x, start_y, shape=command[:-1])
         center_line, trench = self.CPW_line(x_list, y_list, width=self.reson_width, gap=self.reson_gap, radius=self.meander_radius, name='Reson')
         return center_line, trench
@@ -416,7 +422,7 @@ class HFSS:
         self.toBeAdd = []
         # Draw Substrate
         self.substrate(dx=self.sub_size_x / 2, dy=self.sub_size_y / 2)
-        self.modeler.create_airbox(offset=10, offset_type="Relative")
+        self.modeler.create_airbox(offset=100, offset_type="Relative")
         print('substrate created')
         # Draw Gnd
         self.gnd = [self.line(-self.sub_size_x / 2, 0, self.sub_size_x / 2, 0, width=self.sub_size_y, name='Gnd')]
@@ -497,7 +503,7 @@ def construct(start_x, start_y, shape=''):
         y_list += [start_y]
     return x_list, y_list
 
-def meander(total,xlen_list,ylen):
+def meander(total,xlen_list,ylen_list):
     command = ''
     remain = total
     flag = True
@@ -507,22 +513,23 @@ def meander(total,xlen_list,ylen):
         else:
             delta = ylen
         if flag:
-            remain -= delta
+            remain -= abs(delta)
             if remain > 0:
                 command += f'{tag}{delta*sign},'
             else:
                 command += f'{tag}{(remain+delta)*sign},'
                 flag = False
-        return flag,remain,command
-    if len(xlen_list)>1:
-        xlen = xlen_list[0]
-        flag, remain, command = draw(flag, remain, command, tag='y', sign=1)
-        flag, remain, command = draw(flag, remain, command, tag='x', sign=-1)
-        xlen = xlen_list[1]
-        flag, remain, command = draw(flag, remain, command, tag='y', sign=1)
-        flag, remain, command = draw(flag, remain, command, tag='x', sign=1)
-    else:
-        xlen = xlen_list[0]
+        return flag, remain, command
+
+    xlen = xlen_list[0]
+    ylen = ylen_list[0]
+    flag, remain, command = draw(flag, remain, command, tag='y', sign=1)
+    flag, remain, command = draw(flag, remain, command, tag='x', sign=-1)
+    xlen = xlen_list[1]
+    ylen = ylen_list[1]
+    flag, remain, command = draw(flag, remain, command, tag='y', sign=1)
+    flag, remain, command = draw(flag, remain, command, tag='x', sign=1)
+
     while flag:
         flag, remain, command = draw(flag, remain, command, tag='y', sign=1)
         flag, remain, command = draw(flag, remain, command, tag='x', sign=-1)
