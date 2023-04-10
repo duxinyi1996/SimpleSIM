@@ -153,7 +153,8 @@ class Myklayout:
 
     def create_airbox(self, **para):
         pass
-
+    def create_air_region(self, **para):
+        pass
     def thicken_sheet(self, **para):
         pass
 

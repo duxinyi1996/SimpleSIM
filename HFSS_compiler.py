@@ -357,7 +357,7 @@ class HFSS:
         self.toBeAdd = []
         # Draw Substrate
         self.substrate(dx=self.sub_size_x/2, dy=self.sub_size_x/2)
-        self.modeler.create_airbox(offset=10, offset_type="Relative")
+        self.modeler.create_air_region(x_pos=10, y_pos=10, z_pos=500, x_neg=10, y_neg=10, z_neg=10, is_percentage=True)
         # Draw Gnd
         self.gnd = [self.line(-self.sub_size_x/2, 0, self.sub_size_x/2, 0, width=self.sub_size_y, name='Gnd')]
         # Draw feedline
@@ -422,7 +422,7 @@ class HFSS:
         self.toBeAdd = []
         # Draw Substrate
         self.substrate(dx=self.sub_size_x / 2, dy=self.sub_size_y / 2)
-        self.modeler.create_airbox(offset=100, offset_type="Relative")
+        self.modeler.create_air_region(x_pos=10, y_pos=10, z_pos=500, x_neg=10, y_neg=10, z_neg=10, is_percentage=True)
         print('substrate created')
         # Draw Gnd
         self.gnd = [self.line(-self.sub_size_x / 2, 0, self.sub_size_x / 2, 0, width=self.sub_size_y, name='Gnd')]

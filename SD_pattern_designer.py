@@ -18,6 +18,7 @@ project_name = os.path.join(folder_path, file_name)
 start = time.time()
 
 h = HFSS(project_name)
+
 h.trap = False
 h.Build_part()
 # h.Build_all(8)
