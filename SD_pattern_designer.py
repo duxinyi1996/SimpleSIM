@@ -13,14 +13,15 @@ from HFSS_compiler import *
 
 folder_path = r'C:\Users\xingrui\Desktop\Shilling\OneDrive_1_4-5-2023\hfss\tune_geo'
 
-file_name = 'test_reson'
+file_name = 'hBN_waveguide003'
 project_name = os.path.join(folder_path, file_name)
 start = time.time()
 
 h = HFSS(project_name)
 
 h.trap = False
-h.Build_part()
+h.Build_hBN_waveguide()
+# h.Build_part(2)
 # h.Build_all(8)
 print('time spent:', time.time()-start, 's')
 
