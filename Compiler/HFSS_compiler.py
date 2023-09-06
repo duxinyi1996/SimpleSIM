@@ -1,20 +1,22 @@
 #!/usr/bin/python
-import os,sys
+import os, sys
+
 folder_path = os.getcwd()
 if folder_path not in sys.path:
-  sys.path.append(folder_path) # easier to open driver files as long as Simple_DAQ.py is in the same folder with drivers
+    sys.path.append(
+        folder_path)  # easier to open driver files as long as Simple_DAQ.py is in the same folder with drivers
 import os
 import time
 from datetime import datetime
 import pyaedt
 import numpy as np
-from dxf_compiler import *
+from Builds.Build_universal_functions import *
 
 class HFSS:
     def __init__(self, project_name):
         self.project_name = project_name
         self.startup()
-        
+
         self.gnd = []
         self.cpw = []
         self.DCleads = []
@@ -27,18 +29,17 @@ class HFSS:
         self.metal_thickness = 80E-3
         self.metal_name = 'perfect conductor'
 
-
-        self.meander_xlen = 300
-        self.meander_ylen = 60
-        self.meander_radius = 20
+        self.meander_xlen = 600
+        self.meander_ylen = 120
+        self.meander_radius = 60
 
         self.feedline_width = 15
         self.feedline_gap = 9
         self.feedline_radius = 100
-        # self.taper_l = 240
-        # self.bond_pad_size = 300
-        self.bond_pad_width = 15
-        self.taper_l =  self.bond_pad_width/3*2
+        self.taper_l = 240
+        self.bond_pad_size = 300
+        self.bond_pad_width = 300
+        self.taper_l = self.bond_pad_width / 3 * 2
         self.bond_pad_l = self.bond_pad_width
         self.bond_pad_gap = self.bond_pad_width / self.feedline_width * self.feedline_gap
 
@@ -55,7 +56,7 @@ class HFSS:
         self.open_end_size_y = 150
 
         # DC filters
-        self.n_finger = 0  # number of fingers
+        self.n_finger = 12  # number of fingers
         self.w_finger = 4  # width of the fingers
         self.w_finger_tren = 2.5  # width of the finger trenches
         self.s_finger = 12  # spacing between the fingers
@@ -67,18 +68,19 @@ class HFSS:
         self.DC_bond_x = 280
         self.DC_bond_y = 300
         self.direction = -1
+
     def startup(self):
         self.non_graphical = False
         self.desktop = pyaedt.Desktop(non_graphical=self.non_graphical, new_desktop_session=True, close_on_exit=False,
-                       student_version=False)
+                                      student_version=False)
         self.q = pyaedt.Hfss(projectname=self.project_name)
         self.modeler = self.q.modeler
         self.unit = 'um'
         self.modeler.model_units = self.unit
         self.desktop.disable_autosave()
-        
+
     def substrate(self, cen_x=0, cen_y=0, dx=4000, dy=4000, up_z=0, name='Si'):
-        up_z = -self.metal_thickness/2
+        up_z = -self.metal_thickness / 2
         position = [cen_x - dx, cen_y - dy, up_z]
         size = [2 * dx, 2 * dy, -self.sub_thickness]
         self.substrate = self.modeler.create_box(
@@ -87,10 +89,10 @@ class HFSS:
             matname=f"{self.sub_name}")
         color = (128, 128, 128)
         transparency = 0.8
-        self.set_appearance(name,color,transparency)
-    
+        self.set_appearance(name, color, transparency)
+
     # Basic_element: Change color
-    def set_appearance(self,name,color,transparency):
+    def set_appearance(self, name, color, transparency):
         obj = self.modeler[f"{name}"]
         obj.color = color
         obj.transparency = transparency
@@ -116,9 +118,9 @@ class HFSS:
         center_point = [end_x, end_y, bottom_z]
         dx = turning_x - cen_x
         dy = turning_y - cen_y
-        mid_point = [cen_x + dx/np.sqrt(2),cen_y + dy/np.sqrt(2), bottom_z]
+        mid_point = [cen_x + dx / np.sqrt(2), cen_y + dy / np.sqrt(2), bottom_z]
         line = self.modeler.create_polyline(
-            [start_point,mid_point,end_point],
+            [start_point, mid_point, end_point],
             segment_type='Arc',
             name=newname(name),
             matname=f"{self.metal_name}",
@@ -129,12 +131,12 @@ class HFSS:
         return line
 
     # Basic_element: taper line
-    def taper(self,start_x, start_y,end_x,end_y,start_width,end_width,direction='x',bottom_z=0,name=None):
-        if direction =='x':
+    def taper(self, start_x, start_y, end_x, end_y, start_width, end_width, direction='x', bottom_z=0, name=None):
+        if direction == 'x':
             taper = self.modeler.create_polyline([[start_x, start_y - start_width / 2, bottom_z],
                                                   [start_x, start_y + start_width / 2, bottom_z],
-                                                  [end_x, end_y + end_width /2, bottom_z],
-                                                  [end_x, end_y - end_width/2, bottom_z],
+                                                  [end_x, end_y + end_width / 2, bottom_z],
+                                                  [end_x, end_y - end_width / 2, bottom_z],
                                                   [start_x, start_y - start_width / 2, bottom_z]],
                                                  cover_surface=True,
                                                  xsection_orient='X',
@@ -186,15 +188,15 @@ class HFSS:
                 segment += [self.line(x_last, y_last, x, y,
                                       name=name,
                                       width=width,
-                                      bottom_z=bottom_z,)]
+                                      bottom_z=bottom_z, )]
         polyline = self.modeler.unite(segment)
         return polyline
 
     # Advance_element: CPW lines
     def CPW_line(self, x_list, y_list, width, gap, radius=0.0, name=None):
         center_line = self.Polyline(x_list, y_list, radius, width, name=name)
-        trench = self.Polyline(x_list, y_list, radius, width + gap * 2, name=name+'_trench')
-        return center_line,trench
+        trench = self.Polyline(x_list, y_list, radius, width + gap * 2, name=name + '_trench')
+        return center_line, trench
 
     # Advance_element: taper CPW lines
     def CPW_taper(self, x_list, y_list, width_list, gap_list, direction='x', name='taper'):
@@ -202,17 +204,17 @@ class HFSS:
                                  x_list[1], y_list[1],
                                  width_list[0], width_list[1],
                                  direction=direction,
-                                 name=name+'taper')
+                                 name=name + 'taper')
         trench = self.taper(x_list[0], y_list[0],
-                                 x_list[1], y_list[1],
-                                 width_list[0]+2*gap_list[0], width_list[1]+2*gap_list[1],
-                                direction=direction,
-                                 name=name + 'taper_trench')
+                            x_list[1], y_list[1],
+                            width_list[0] + 2 * gap_list[0], width_list[1] + 2 * gap_list[1],
+                            direction=direction,
+                            name=name + 'taper_trench')
 
         return center_line, trench
 
     # Advance_element: Bond pads for feedline
-    def Bond_pad(self,x, y, direction='x'):
+    def Bond_pad(self, x, y, direction='x'):
         new_gap = self.bond_pad_gap
         if direction == 'x':
             newx = x + self.taper_l * np.sign(x)
@@ -224,15 +226,15 @@ class HFSS:
         else:
             newx = x
             newy = y + self.taper_l * np.sign(y)
-            self.port_end_y = newy + self.bond_pad_l  * np.sign(y)
+            self.port_end_y = newy + self.bond_pad_l * np.sign(y)
             self.port_start_y = self.port_end_y + new_gap * np.sign(y)
             self.port_end_x = x
             self.port_start_x = x
         taper, taper_tren = self.CPW_taper(x_list=[x, newx],
-                                             y_list=[y, newy],
-                                             width_list=[self.feedline_width, self.bond_pad_width],
-                                             gap_list=[self.feedline_gap, new_gap],
-                                             direction=direction)
+                                           y_list=[y, newy],
+                                           width_list=[self.feedline_width, self.bond_pad_width],
+                                           gap_list=[self.feedline_gap, new_gap],
+                                           direction=direction)
         bond, bond_tren = self.CPW_line(
             x_list=[self.port_end_x, newx],
             y_list=[self.port_end_y, newy],
@@ -241,18 +243,18 @@ class HFSS:
             name='bond')
         bond_open = self.line(start_x=self.port_start_x, start_y=self.port_start_y,
                               end_x=self.port_end_x, end_y=self.port_end_y,
-                              width=self.bond_pad_width + new_gap*2)
+                              width=self.bond_pad_width + new_gap * 2)
 
         center_line = self.modeler.unite([taper, bond])
         trench = self.modeler.unite([taper_tren, bond_tren, bond_open])
         self.port()
-        return center_line,trench
+        return center_line, trench
 
     def port(self):
         start = [self.port_start_x, self.port_start_y, 0]
         end = [self.port_end_x, self.port_end_y, 0]
         if self.port_start_x == self.port_start_y:
-            dx = self.bond_pad_width/2
+            dx = self.bond_pad_width / 2
             dy = 0
         else:
             dx = 0
@@ -262,20 +264,20 @@ class HFSS:
         p3 = [self.port_end_x + dx, self.port_end_y + dy, 0]
         p4 = [self.port_end_x - dx, self.port_end_y - dy, 0]
         name = newname('port')
-        port = self.modeler.create_polyline([p1,p2,p3,p4,p1], name=name, cover_surface=True)
+        port = self.modeler.create_polyline([p1, p2, p3, p4, p1], name=name, cover_surface=True)
         self.q.create_lumped_port_to_sheet(name,
                                            axisdir=[start, end], impedance=50,
                                            portname='port')
 
-
     # Customized_element: build resonator
-    def CPW_reson(self,x,y):
+    def CPW_reson(self, x, y):
         start_x = -self.reson_l_couple / 2 + x
-        start_y = (self.feedline_width / 2 + self.feedline_gap + self.reson_couple_d) + self.reson_gap + self.reson_width / 2 + self.reson_l_open
+        start_y = (
+                              self.feedline_width / 2 + self.feedline_gap + self.reson_couple_d) + self.reson_gap + self.reson_width / 2 + self.reson_l_open
         start_y = start_y * self.direction + y
 
-        if self.reson_l_couple-300 < self.meander_xlen:
-            xlen_list = [self.reson_l_couple-300, self.meander_xlen]
+        if self.reson_l_couple - 300 < self.meander_xlen:
+            xlen_list = [self.reson_l_couple - 300, self.meander_xlen]
         else:
             xlen_list = [self.meander_xlen, self.meander_xlen]
 
@@ -288,9 +290,10 @@ class HFSS:
         self.open_end_y = start_y
         command = f'y{self.reson_l_open * (-self.direction)},'
         command += f'x{self.reson_l_couple},'
-        command += meander(self.reson_l_short, xlen_list=xlen_list, ylen_list=ylen_list)
+        command += meander(self.reson_l_short, xlen_list=xlen_list, ylen_list=ylen_list, radius = self.meander_radius)
         x_list, y_list = construct(start_x, start_y, shape=command[:-1])
-        center_line, trench = self.CPW_line(x_list, y_list, width=self.reson_width, gap=self.reson_gap, radius=self.meander_radius, name='Reson')
+        center_line, trench = self.CPW_line(x_list, y_list, width=self.reson_width, gap=self.reson_gap,
+                                            radius=self.meander_radius, name='Reson')
         return center_line, trench
 
     # Customized_element: build feedline
@@ -312,23 +315,23 @@ class HFSS:
         tren_list = []
         for i in range(self.n_finger):
             dx = self.h_finger + self.DCcpw_width / 2
-            cen = self.line(start_x=x-dx, start_y=y+i*self.s_finger *self.direction,
-                            end_x=x+dx, end_y=y+i*self.s_finger *self.direction,
+            cen = self.line(start_x=x - dx, start_y=y + i * self.s_finger * self.direction,
+                            end_x=x + dx, end_y=y + i * self.s_finger * self.direction,
                             width=self.w_finger, name='finger_cap')
-            tren = self.line(start_x=x-dx-self.w_finger_tren * 2, start_y=y+i*self.s_finger*self.direction,
-                            end_x=x+dx+self.w_finger_tren * 2, end_y=y+i*self.s_finger*self.direction,
-                            width=self.w_finger + self.w_finger_tren*2,
+            tren = self.line(start_x=x - dx - self.w_finger_tren * 2, start_y=y + i * self.s_finger * self.direction,
+                             end_x=x + dx + self.w_finger_tren * 2, end_y=y + i * self.s_finger * self.direction,
+                             width=self.w_finger + self.w_finger_tren * 2,
                              name='finger_cap_trench')
             cen_list += [cen]
             tren_list += [tren]
 
         # Inductor loop
         command, offset_x, offset_y, radius_list = inductor(self.DC_bond_x,
-                                               self.DC_bond_y,
-                                               total=7500,
-                                               spacing=self.DCcpw_width+self.DCcpw_gap,
-                                               direction=-self.direction)
-        x_list, y_list = construct(x+offset_x, y+offset_y, command)
+                                                            self.DC_bond_y,
+                                                            total=7500,
+                                                            spacing=self.DCcpw_width + self.DCcpw_gap,
+                                                            direction=-self.direction)
+        x_list, y_list = construct(x + offset_x, y + offset_y, command)
         cen, tren = self.CPW_line(x_list=x_list, y_list=y_list,
                                   width=self.DCcpw_width,
                                   gap=self.DCcpw_gap,
@@ -342,12 +345,12 @@ class HFSS:
         y1 = y + offset_y
         x2 = x + offset_x - self.DC_bond_x / 2
         y2 = y + offset_y + self.DC_bond_y
-        self.DCleads_position += [[(x1+x2)/2, (y1+y2)/2]]
+        self.DCleads_position += [[(x1 + x2) / 2, (y1 + y2) / 2]]
         spacing = self.DCcpw_width + self.DCcpw_gap
         cen = self.line(start_x=x1, start_y=y1, end_x=x2, end_y=y2,
                         width=self.DC_bond_x, name='Pads')
-        tren = self.line(start_x=x1, start_y= y1-spacing, end_x=x2, end_y=y2+spacing,
-                        width=self.DC_bond_x + spacing * 2, name='Pads_trench')
+        tren = self.line(start_x=x1, start_y=y1 - spacing, end_x=x2, end_y=y2 + spacing,
+                         width=self.DC_bond_x + spacing * 2, name='Pads_trench')
         cen_list += [cen]
         tren_list += [tren]
 
@@ -355,7 +358,7 @@ class HFSS:
         trench = self.modeler.unite(tren_list)
         return center, trench
 
-    def draw_reson(self, lshort, x, y, lead_number = 0):
+    def draw_reson(self, lshort, x, y, lead_number=0):
         self.direction = - np.sign(y)
         self.reson_l_short = lshort
         cen, tren = self.CPW_reson(x=x, y=y)
@@ -374,7 +377,7 @@ class HFSS:
             if i % 2 == 0:
                 y2 = open_end_edge + self.direction * 200
             else:
-                y2 = open_end_edge + self.direction * 850
+                y2 = open_end_edge + self.direction * 900
             ym = y1 + self.direction * (lead_number / 2 + 1 - abs(i - lead_number / 2)) * 20
             ym1 = ym + self.direction * 40
             connect, connect_tren = self.CPW_line(x_list=[x1, x1, x2, x2],
@@ -395,88 +398,6 @@ class HFSS:
             self.DCleads += [DC_lead_sum]
             self.tempsave()
 
-    # Modeler_sum: build_chip design
-    def Build_all(self,lead_number = 0):
-        self.toBeRemove = []
-        self.toBeAdd = []
-        # Draw Substrate
-        self.substrate(dx=self.sub_size_x/2, dy=self.sub_size_x/2)
-        self.modeler.create_air_region(x_pos=10, y_pos=10, z_pos=500, x_neg=10, y_neg=10, z_neg=10, is_percentage=True)
-        # Draw Gnd
-        self.gnd = [self.line(-self.sub_size_x/2, 0, self.sub_size_x/2, 0, width=self.sub_size_y, name='Gnd')]
-        # Draw feedline
-        x_list, y_list = construct(-3000, 3000, 'x6000,y-6000,x-6000')
-        feed_cen, feed_tren = self.Feedline(x_list=x_list, y_list=y_list)
-        self.toBeRemove += [feed_tren]
-        self.feedline = [feed_cen]
-
-        # Draw resonator
-        self.draw_reson(lshort=2750, x=-1500, y=3000, lead_number=lead_number)
-        self.draw_reson(lshort=3000, x=1500, y=3000, lead_number=lead_number)
-        self.draw_reson(lshort=3250, x=-1500, y=-3000, lead_number=lead_number)
-        self.draw_reson(lshort=3500, x=1500, y=-3000, lead_number=lead_number)
-
-        self.gnd = self.modeler.subtract(self.gnd, self.toBeRemove, keep_originals=False)
-        self.cpw = self.modeler.unite(self.toBeAdd)
-        self.save()
-
-    def Build_part(self,lead_number = 0):
-        self.sub_size_x = 4000
-        self.sub_size_y = 4000
-        self.toBeRemove = []
-        self.toBeAdd = []
-        # Draw Substrate
-        self.substrate(dx=self.sub_size_x / 2, dy=self.sub_size_y / 2)
-        self.modeler.create_air_region(x_pos=0.1, y_pos=0.1, z_pos=400, x_neg=0.1, y_neg=0.1, z_neg=10, is_percentage=True)
-        print('substrate created')
-        # Draw Gnd
-        self.gnd = [self.line(-self.sub_size_x / 2, 0, self.sub_size_x / 2, 0, width=self.sub_size_y, name='Gnd')]
-        print('ground created')
-        # Draw feedline
-        x_list, y_list = construct(-1000, 1500, 'x2000')
-        feed_cen, feed_tren = self.Feedline(x_list=x_list, y_list=y_list)
-        print('feedline created')
-        self.toBeRemove += [feed_tren]
-        self.feedline = [feed_cen]
-
-        self.draw_reson(lshort=3250, x=0, y=1500, lead_number=lead_number)
-        self.gnd = self.modeler.subtract(self.gnd, self.toBeRemove, keep_originals=False)
-        self.cpw = self.modeler.unite(self.toBeAdd)
-
-        self.save()
-    def Build_hBN_waveguide(self):
-        self.sub_name = 'alumina_96pct'
-        self.sub_thickness = 400
-        self.sub_size_x = 60000
-        self.sub_size_y = 6000
-        self.metal_name = 'gold'
-        self.metal_thickness = 160E-3
-        self.toBeRemove = []
-        self.toBeAdd = []
-        # Draw Substrate
-        self.substrate(dx=self.sub_size_x / 2, dy=self.sub_size_y / 2, name= 'Sapphire')
-        self.modeler.create_air_region(x_pos=0.1, y_pos=0.1, z_pos=400, x_neg=0.1, y_neg=0.1, z_neg=10,
-                                       is_percentage=True)
-        print('substrate created')
-        # Draw Gnd
-        self.gnd = [self.line(-self.sub_size_x / 2, 0, self.sub_size_x / 2, 0, width=self.sub_size_y, name='Gnd')]
-        print('ground created')
-
-        # Draw feedline
-        self.bond_pad_width = 1600
-        self.bond_pad_gap = 320
-        self.bond_pad_l = 20000
-        self.taper_l = self.bond_pad_width/3*2
-        self.feedline_gap = 20
-        self.feedline_width = 50
-        x_list, y_list = construct(-75, 50, 'x150')
-        feed_cen, feed_tren = self.Feedline(x_list=x_list, y_list=y_list)
-        print('feedline created')
-        self.toBeRemove += [feed_tren]
-        self.feedline = [feed_cen]
-
-        self.gnd = self.modeler.subtract(self.gnd, self.toBeRemove, keep_originals=False)
-        self.save()
     def FakeWirebonds(self):
         index = 0
         x0 = -self.sub_size_x / 2
@@ -493,19 +414,19 @@ class HFSS:
             y_start = y0 + d
             self.line(x_start - d1 / 2, y_start, x_start + d1 / 2, y_start, width=d1)
             empty += [self.line(x_start - d2 / 2, y_start, x_start + d2 / 2, y_start, width=d2)]
-            self.modeler.create_polyline([[x_start-d1/2,y_start-d2/2 ,0],
-                                          [x_start-d1/2,y_start-d1/2,0],
-                                          [x_start+d1/2,y_start-d1/2,0],
-                                          [x_start+d1/2,y_start-d2/2,0],
-                                          [x_start-d1/2,y_start-d2/2,0]],
+            self.modeler.create_polyline([[x_start - d1 / 2, y_start - d2 / 2, 0],
+                                          [x_start - d1 / 2, y_start - d1 / 2, 0],
+                                          [x_start + d1 / 2, y_start - d1 / 2, 0],
+                                          [x_start + d1 / 2, y_start - d2 / 2, 0],
+                                          [x_start - d1 / 2, y_start - d2 / 2, 0]],
                                          name=f'DC_{index}',
                                          cover_surface=True)
             self.modeler.create_bondwire(start_position=[x_start, y_start, self.sub_thickness / 2],
                                          end_position=[x, y, self.sub_thickness / 2],
                                          matname=self.metal_name)
             self.q.assign_voltage_source_to_sheet(sheet_name=f'DC_{index}',
-                                                  axisdir=[[x_start,y_start-d2/2,0],
-                                                           [x_start,y_start-d1/2,0]])
+                                                  axisdir=[[x_start, y_start - d2 / 2, 0],
+                                                           [x_start, y_start - d1 / 2, 0]])
         self.modeler.subtract([self.modeler['Gnd_0']], empty, keep_originals=False)
 
     def save(self):
@@ -517,108 +438,13 @@ class HFSS:
         self.q.save_project()
 
 
-def construct(start_x, start_y, shape=''):
-    command = shape.split(',')
-    x_list = [start_x]
-    y_list = [start_y]
-    for each in command:
-        select = each[0]
-        len = float(each[1:])
-        if select == 'x':
-            start_x += len
-        if select == 'y':
-            start_y += len
-        x_list += [start_x]
-        y_list += [start_y]
-    return x_list, y_list
-
-def meander(total,xlen_list,ylen_list):
-    command = ''
-    remain = total
-    flag = True
-    def draw(flag,remain,command,tag,sign):
-        if tag =='x':
-            delta = xlen
-        else:
-            delta = ylen
-        if flag:
-            remain -= abs(delta)
-            if remain > 0:
-                command += f'{tag}{delta*sign},'
-            else:
-                command += f'{tag}{(remain+delta)*sign},'
-                flag = False
-        return flag, remain, command
-
-    xlen = xlen_list[0]
-    ylen = ylen_list[0]
-    flag, remain, command = draw(flag, remain, command, tag='y', sign=1)
-    flag, remain, command = draw(flag, remain, command, tag='x', sign=-1)
-    xlen = xlen_list[1]
-    ylen = ylen_list[1]
-    flag, remain, command = draw(flag, remain, command, tag='y', sign=1)
-    flag, remain, command = draw(flag, remain, command, tag='x', sign=1)
-
-    while flag:
-        flag, remain, command = draw(flag, remain, command, tag='y', sign=1)
-        flag, remain, command = draw(flag, remain, command, tag='x', sign=-1)
-        flag, remain, command = draw(flag, remain, command, tag='y', sign=1)
-        flag, remain, command = draw(flag, remain, command, tag='x', sign=1)
-    return command
-
-def inductor(xpad,ypad,spacing,total,direction=1):
-    global dx, dy, flag, remain, command, radius
-    d = {}
-    d.update({'x': 0})
-    d.update({'y': 0})
-    d.update({'r': []})
-    radius = 0
-    d['r'] += [radius]
-    command = ''
-    remain = total
-    flag = True
-    def draw(xpad , ypad, tag, sign):
-        global dx, dy, flag, remain, command, radius
-        if flag:
-            if tag == 'x':
-                xpad = xpad + spacing
-                delta = xpad
-            else:
-                ypad = ypad + spacing
-                delta = ypad
-            remain -= delta
-            if tag == 'y' and sign == 1:
-                radius += spacing
-            if remain < 500 and tag =='x' and sign == -direction:
-                command += f'{tag}{(delta/2) * sign},'
-                d[tag] += (delta/2) * sign
-                d['r'] += [spacing]
-                flag = False
-            else:
-                command += f'{tag}{delta * sign},'
-                d[tag] += delta * sign
-                d['r'] += [radius]
-
-        return xpad, ypad
-    while flag:
-        xpad, ypad = draw(xpad, ypad, tag='y', sign=1)
-        xpad, ypad = draw(xpad, ypad, tag='x', sign=-1)
-        xpad, ypad = draw(xpad, ypad, tag='y', sign=-1)
-        xpad, ypad = draw(xpad, ypad, tag='x', sign=1)
-    command += f'y{direction*250}'
-    d['y'] += direction * 250
-    return command, -d['x'], -d['y'], d['r']
-
 global counter
 counter = 0
+
 def newname(name):
     global counter
     if name is None:
-        name =''
-    name = name+f'_{counter}'
+        name = ''
+    name = name + f'_{counter}'
     counter += 1
     return name
-
-
-
-
