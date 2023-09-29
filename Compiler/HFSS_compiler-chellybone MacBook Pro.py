@@ -36,7 +36,8 @@ class HFSS:
         self.feedline_width = 15
         self.feedline_gap = 9
         self.feedline_radius = 100
-        
+        self.taper_l = 240
+        self.bond_pad_size = 300
         self.bond_pad_width = 300
         self.taper_l = self.bond_pad_width / 3 * 2
         self.bond_pad_l = self.bond_pad_width
@@ -192,12 +193,8 @@ class HFSS:
         return polyline
 
     # Advance_element: CPW lines
-    def CPW_line(self, x_list, y_list, width, gap, radius=0.0, name=None, end=[0,0]):
+    def CPW_line(self, x_list, y_list, width, gap, radius=0.0, name=None):
         center_line = self.Polyline(x_list, y_list, radius, width, name=name)
-        x_list[0] = x_list[0] - gap*2*np.sign(x_list[1]-x_list[0])*end[0]
-        y_list[0] = y_list[0] - gap*2*np.sign(y_list[1]-y_list[0])*end[0]
-        x_list[-1] = x_list[-1] + gap*2*np.sign(x_list[-1]-x_list[-2])*end[1]
-        y_list[-1] = y_list[-1] + gap*2*np.sign(y_list[-1]-y_list[-2])*end[1]
         trench = self.Polyline(x_list, y_list, radius, width + gap * 2, name=name + '_trench')
         return center_line, trench
 
@@ -300,24 +297,16 @@ class HFSS:
         return center_line, trench
 
     # Customized_element: build feedline
-    def Feedline(self, x_list, y_list, double_end_taper=True):
+    def Feedline(self, x_list, y_list):
         center_line, trench = self.CPW_line(x_list, y_list,
                                             width=self.feedline_width,
                                             gap=self.feedline_gap,
                                             radius=self.feedline_radius,
                                             name='feedline')
         cen1, tren1 = self.Bond_pad(x_list[0], y_list[0])
-        if double_end_taper:
-            cen2, tren2 = self.Bond_pad(x_list[-1], y_list[-1])
-            center_line = self.modeler.unite([center_line, cen1, cen2])
-            trench = self.modeler.unite([trench, tren1, tren2])
-        else:
-            tren = self.Polyline(x_list=[x_list[-1],x_list[-1]+self.feedline_gap*2*np.sign(x_list[-1]-x_list[0])], 
-                                 y_list=[y_list[-1],y_list[-1]+self.feedline_gap*2*np.sign(y_list[-1]-y_list[0])], 
-                                 radius=self.feedline_radius, 
-                                 width=self.feedline_width+self.feedline_gap*2)
-            center_line = self.modeler.unite([center_line, cen1])
-            trench = self.modeler.unite([trench, tren1, tren])
+        cen2, tren2 = self.Bond_pad(x_list[-1], y_list[-1])
+        center_line = self.modeler.unite([center_line, cen1, cen2])
+        trench = self.modeler.unite([trench, tren1, tren2])
         return center_line, trench
 
     # Customized_element: build DC filter

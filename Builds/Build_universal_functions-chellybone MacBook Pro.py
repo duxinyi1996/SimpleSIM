@@ -5,21 +5,15 @@ def construct(start_x, start_y, shape=''):
     command = shape.split(',')
     x_list = [start_x]
     y_list = [start_y]
-    pre_select = None
     for each in command:
-        if command.index(each) == len(command)-1:
-            pre_select = None
-        if 'x' in each or 'y' in each:
-            select = each[0]
-            length = float(each[1:])
-            if select == 'x':
-                start_x += length
-            if select == 'y':
-                start_y += length
-            if pre_select is None or select!= pre_select:
-                x_list += [start_x]
-                y_list += [start_y]
-            pre_select = select
+        select = each[0]
+        len = float(each[1:])
+        if select == 'x':
+            start_x += len
+        if select == 'y':
+            start_y += len
+        x_list += [start_x]
+        y_list += [start_y]
     return x_list, y_list
 
 
