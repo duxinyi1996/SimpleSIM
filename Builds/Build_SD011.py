@@ -22,9 +22,9 @@ def Build_011(object, lead_number=0):
     # Draw Gnd
     object.gnd = [object.line(-object.sub_size_x / 2, 0, object.sub_size_x / 2, 0, width=object.sub_size_y, name='Gnd')]
     # Draw feedline
-    x_list, y_list = construct(-1500, 2000, 'x500')
+    x_list, y_list = construct(-1300, 2500, 'x300')
     feed_cen_1, feed_tren_1 = object.Feedline(x_list=x_list, y_list=y_list, double_end_taper=False)
-    x_list, y_list = construct(-1500, -2000, 'x500')
+    x_list, y_list = construct(-1300, -2500, 'x300')
     feed_cen_2, feed_tren_2 = object.Feedline(x_list=x_list, y_list=y_list, double_end_taper=False)
     object.toBeRemove += [feed_tren_1, feed_tren_2]
     object.feedline = [feed_cen_1, feed_cen_2]
@@ -33,8 +33,8 @@ def Build_011(object, lead_number=0):
     couple_l = 200
     spacing = 20
     radius = 150
-    start = [-1000,2000]
-    stop = [1000,-2000]
+    start = [-1000,2500]
+    stop = [1000,-2500]
     total_l = 11000
     def meander_1(start,stop,couple_l,spacing,total_l,radius,x_turns1,x_turns2):
         x1 = start[0] - couple_l
@@ -44,7 +44,7 @@ def Build_011(object, lead_number=0):
         remain = total_l - abs(x_turns1-x1) - abs(x_turns1-x2) - abs(y1-y2)
         turns = remain//(2*abs(x_turns1 - x_turns2))
         shift = remain%(2*abs(x_turns1 - x_turns2))
-        print(remain,turns,shift)
+        # print(remain,turns,shift)
         x = x1
         y = y1
         command = []
@@ -54,7 +54,7 @@ def Build_011(object, lead_number=0):
            command += [f'y{2*radius*np.sign(y2-y1)},']
            y -= 2*radius
            direction = -direction
-           print(direction)
+        #    print(direction)
            command += [f'x{(x_turns1-x_turns2)*direction},']
         command += [f'y{2*radius*np.sign(y2-y1)},']
         y -= 2*radius
@@ -111,15 +111,67 @@ def Build_011(object, lead_number=0):
     
     x1,y1,all_command = meander_1(start,stop,couple_l,spacing,total_l,radius,x_turns1=1500,x_turns2=1000)
     # x1,y1,all_command = meander_2(start,stop,couple_l,spacing,total_l,radius,x_turns1=500)
-    print(all_command)
+    # print(all_command)
     x_list, y_list = construct(start_x=x1, start_y=y1, shape=all_command)
     center_line, trench = object.CPW_line(x_list, y_list, 
                     width=object.reson_width, gap=object.reson_gap, 
                     radius=radius, name='reson',
                     end=[1,1])
-    
     object.toBeRemove += [trench]
     object.toBeAdd += [center_line]
+
+    # Draw DC lines:
+    def DC_lines(object, x, y, dy, lead_number):
+        object.direction = - np.sign(y)
+        tren = object.line(start_x=x,
+                             start_y=y,
+                             end_x=x,
+                             end_y=y+object.direction*dy,
+                             width=2*object.DCcpw_gap+object.DCcpw_width)
+        cen = object.line(start_x=x,
+                             start_y=y,
+                             end_x=x,
+                             end_y=y+object.direction*dy,
+                             width=object.DCcpw_width)
+        open_end = object.line(start_x=x,
+                             start_y=y+object.direction*dy,
+                             end_x=x,
+                             end_y=y+object.direction*(dy+175),
+                             width=250)
+        object.toBeRemove += [tren,open_end]
+        object.toBeAdd += [cen]
+        for i in range(lead_number):
+            print('processing lead:',i )
+            x1 = x + (2 * i - lead_number + 1) / 2 * (object.open_end_size_x / lead_number)
+            x2 = x + (2 * i - lead_number + 1) / 2 * 280
+            y1 = y+object.direction*(dy+175)
+            if i % 2 == 0:
+                y2 = y1 + object.direction * 300
+            else:
+                y2 = y1 + object.direction * 1000
+            ym = y1 + object.direction * (lead_number / 2 + 1 - abs(i - lead_number / 2)) * 20
+            ym1 = ym + object.direction * 40
+            connect, connect_tren = object.CPW_line(x_list=[x1, x1, x2, x2],
+                                                  y_list=[y1, ym, ym, ym1],
+                                                  width=5,
+                                                  gap=3,
+                                                  radius=15,
+                                                  name='connect'
+                                                  )
+            taper, taper_tren = object.CPW_taper(x_list=[x2, x2],
+                                               y_list=[ym1, y2],
+                                               width_list=[5, object.DCcpw_width],
+                                               gap_list=[3, object.DCcpw_gap],
+                                               direction='y')
+            DC_lead, DC_lead_tren = object.DC_filter(x2, y2)
+            DC_lead_sum = object.modeler.unite([DC_lead, taper, connect])
+            object.toBeRemove += [taper_tren, DC_lead_tren, connect_tren]
+            object.DCleads += [DC_lead_sum]
+        return object
+    object = DC_lines(object, x= start[0],
+                    y=start[1]- (spacing + object.reson_width)* np.sign(start[1]), 
+                    dy=200, 
+                    lead_number=lead_number)
     object.gnd = object.modeler.subtract(object.gnd, object.toBeRemove, keep_originals=False)
     object.cpw = object.modeler.unite(object.toBeAdd)
     object.save()

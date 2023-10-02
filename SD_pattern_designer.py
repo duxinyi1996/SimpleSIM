@@ -21,11 +21,13 @@ from Compiler.HFSS_compiler import *
 # print('time spent:', time.time()-start, 's')
 
 from Builds.Build_SD011 import *
-folder_path = r'C:\Users\duxin\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Fab_files\SD_011'
-file_name = 'Test_001_4'
+# folder_path = r'C:\Users\duxin\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Fab_files\SD_011'
+folder_path = r'C:\Users\xingrui\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Fab_files\SD_011'
+file_name = 'Test_011_6'
 project_name = os.path.join(folder_path, file_name)
 start = time.time()
+# h = DXF(project_name)
 h = DXF(project_name)
 h.trap = 0
-Build_011(h)
+Build_011(h,lead_number=8)
 print('time spent:', time.time()-start, 's')
