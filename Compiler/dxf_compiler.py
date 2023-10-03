@@ -1,12 +1,13 @@
 #!/usr/bin/python
 import os, sys
+from datetime import datetime as dt
 
 folder_path = os.getcwd()
 if folder_path not in sys.path:
     sys.path.append(
         folder_path)  # easier to open driver files as long as Simple_DAQ.py is in the same folder with drivers
 import os, sys
-import klayout.db as db
+import pya as db
 from Compiler.HFSS_compiler import *
 import numpy as np
 
@@ -14,15 +15,16 @@ import numpy as np
 class DXF(HFSS):
     def startup(self):
         self.trap = True
+        self.label = True
         self.q = db.Layout()
         self.unit = 1E-6    # data were in 1um unit
-        self.q.dbu = 1E-9/self.unit     # sets the database precision 50nm,
-        self.dxf_unit = 1E-3    # dxf output in 1mm unit
+        self.q.dbu = 1E-9/self.unit     # sets the database precision 1nm,
+        self.dxf_unit = 1E-3    # dxf ratio
         self.modeler = Myklayout()
         self.main = self.q.create_cell("Main")
         self.t = db.DCplxTrans(1/self.q.dbu)
         self.t_dxf = db.DCplxTrans(self.dxf_unit / self.unit)
-
+        self.texts = []
 
     def set_appearance(self, name, color, transparency):
         pass
@@ -107,26 +109,40 @@ class DXF(HFSS):
         d = 10
         s = 3
         if self.trap:
+            print('Adding trap')
             region1 = self.gnd[0].sized(-safe/self.q.dbu)
             region2 = (self.gnd[1].snapped(d/self.q.dbu, d/self.q.dbu)).sized(safe/self.q.dbu)
             region = (region1 - region2).merge()
-
             real = create_trap(d, s) & region
             self.mylist += [real]
             self.taglist += ['Trap']
+
+    # Customized_element: Create labels
+    def add_label(self,x,y):
+        today = dt.now().strftime("%Y%m%d")
+        name = (self.project_name).split("\\")[-1].split("/")[-1]
+        label = f'{today}' + '_' + name
+        # text =  db.Text(label, x, y)
+        gen_text = db.TextGenerator().default_generator()
+        region = db.Region()
+        region += gen_text.text(label, self.q.dbu, 100.0)
+        # print('text', region)
+        self.texts += [region.moved(x/self.q.dbu,y/self.q.dbu)]
 
     def save(self):
         def draw(tag, items):
             layer = self.q.layer(tag)
             for item in items:
                 self.main.shapes(layer).insert(item)
+                print('Drawing layer ',tag)
         self.outter_gnd = self.gnd[0]
         self.inner_gnd = (self.gnd[1]-self.cpw).merge()
         self.mylist = [self.outter_gnd,
                   self.feedline,
                   self.inner_gnd,
-                  self.DCleads]
-        self.taglist = ['GND', 'Feedline', 'Reson', 'DCleads']
+                  self.DCleads,
+                  self.texts]
+        self.taglist = ['GND', 'Feedline', 'Reson', 'DCleads','Labels']
         self.add_trap()
         for i in range(0, len(self.mylist)):
             draw(self.taglist[i], self.mylist[i])

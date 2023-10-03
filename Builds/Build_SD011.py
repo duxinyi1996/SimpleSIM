@@ -4,6 +4,7 @@ from Builds.Build_universal_functions import *
 def Build_011(object, lead_number=0):
     object.sub_size_x = 7500
     object.sub_size_y = 7500
+    # object.feedline_width = 25
     object.feedline_width = 17
     object.feedline_gap = 10
     object.reson_width = object.feedline_width
@@ -12,6 +13,7 @@ def Build_011(object, lead_number=0):
     object.bond_pad_width = 300
     object.taper_l = object.bond_pad_width / 3 * 2
     object.bond_pad_l = object.bond_pad_width
+    # object.bond_pad_gap = 127
     object.bond_pad_gap = 90
 
     object.toBeRemove = []
@@ -35,7 +37,8 @@ def Build_011(object, lead_number=0):
     radius = 150
     start = [-1000,2500]
     stop = [1000,-2500]
-    total_l = 11000
+    # total_l = 11000 # for test 011, test 011_1 to test 011_6
+    total_l = 11000 # for SD_011, SD_011_withDC
     def meander_1(start,stop,couple_l,spacing,total_l,radius,x_turns1,x_turns2):
         x1 = start[0] - couple_l
         y1 = start[1]- (spacing + object.reson_width )* np.sign(start[1])
@@ -44,7 +47,7 @@ def Build_011(object, lead_number=0):
         remain = total_l - abs(x_turns1-x1) - abs(x_turns1-x2) - abs(y1-y2)
         turns = remain//(2*abs(x_turns1 - x_turns2))
         shift = remain%(2*abs(x_turns1 - x_turns2))
-        # print(remain,turns,shift)
+        print(remain,turns,shift)
         x = x1
         y = y1
         command = []
@@ -121,7 +124,10 @@ def Build_011(object, lead_number=0):
     object.toBeAdd += [center_line]
 
     # Draw DC lines:
+    object.DCcpw_width = 10
+    object.DCcpw_gap = 2
     def DC_lines(object, x, y, dy, lead_number):
+        extend = 10
         object.direction = - np.sign(y)
         tren = object.line(start_x=x,
                              start_y=y,
@@ -131,7 +137,7 @@ def Build_011(object, lead_number=0):
         cen = object.line(start_x=x,
                              start_y=y,
                              end_x=x,
-                             end_y=y+object.direction*dy,
+                             end_y=y+object.direction*(dy+extend),
                              width=object.DCcpw_width)
         open_end = object.line(start_x=x,
                              start_y=y+object.direction*dy,
@@ -152,7 +158,7 @@ def Build_011(object, lead_number=0):
             ym = y1 + object.direction * (lead_number / 2 + 1 - abs(i - lead_number / 2)) * 20
             ym1 = ym + object.direction * 40
             connect, connect_tren = object.CPW_line(x_list=[x1, x1, x2, x2],
-                                                  y_list=[y1, ym, ym, ym1],
+                                                  y_list=[y1-object.direction*extend, ym, ym, ym1],
                                                   width=5,
                                                   gap=3,
                                                   radius=15,
@@ -168,12 +174,13 @@ def Build_011(object, lead_number=0):
             object.toBeRemove += [taper_tren, DC_lead_tren, connect_tren]
             object.DCleads += [DC_lead_sum]
         return object
-    object = DC_lines(object, x= start[0],
-                    y=start[1]- (spacing + object.reson_width)* np.sign(start[1]), 
-                    dy=200, 
-                    lead_number=lead_number)
+    # object = DC_lines(object, x= start[0]-couple_l,
+    #                 y=start[1]- (spacing + object.reson_width)* np.sign(start[1]), 
+    #                 dy=400, 
+    #                 lead_number=lead_number)
     object.gnd = object.modeler.subtract(object.gnd, object.toBeRemove, keep_originals=False)
     object.cpw = object.modeler.unite(object.toBeAdd)
+    object.add_label(2800,3000)
     object.save()
 
 

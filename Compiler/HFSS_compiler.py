@@ -368,7 +368,7 @@ class HFSS:
         center = self.modeler.unite(cen_list)
         trench = self.modeler.unite(tren_list)
         return center, trench
-
+    
     def draw_reson(self, lshort, x, y, lead_number=0):
         self.direction = - np.sign(y)
         self.reson_l_short = lshort

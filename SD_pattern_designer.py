@@ -23,7 +23,7 @@ from Compiler.HFSS_compiler import *
 from Builds.Build_SD011 import *
 # folder_path = r'C:\Users\duxin\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Fab_files\SD_011'
 folder_path = r'C:\Users\xingrui\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Fab_files\SD_011'
-file_name = 'Test_011_6'
+file_name = 'SD011AddDCtext'
 project_name = os.path.join(folder_path, file_name)
 start = time.time()
 # h = DXF(project_name)
