@@ -134,7 +134,7 @@ class DXF(HFSS):
             layer = self.q.layer(tag)
             for item in items:
                 self.main.shapes(layer).insert(item)
-                print('Drawing layer ',tag)
+                print('Drawing layer:',tag)
         self.outter_gnd = self.gnd[0]
         self.inner_gnd = (self.gnd[1]-self.cpw).merge()
         self.mylist = [self.outter_gnd,

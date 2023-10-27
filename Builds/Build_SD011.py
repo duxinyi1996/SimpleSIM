@@ -180,7 +180,7 @@ def Build_011(object, lead_number=0):
     #                 lead_number=lead_number)
     object.gnd = object.modeler.subtract(object.gnd, object.toBeRemove, keep_originals=False)
     object.cpw = object.modeler.unite(object.toBeAdd)
-    object.add_label(2800,3000)
+    object.add_label(2600,3000)
     object.save()
 
 
