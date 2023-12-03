@@ -20,14 +20,25 @@ from Compiler.HFSS_compiler import *
 # Build_009(h,8)
 # print('time spent:', time.time()-start, 's')
 
-from Builds.Build_SD011 import *
-# folder_path = r'C:\Users\duxin\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Fab_files\SD_011'
-folder_path = r'C:\Users\xingrui\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Fab_files\SD_011'
-file_name = 'SD011AddDCtext'
+# from Builds.Build_SD011 import *
+# # folder_path = r'C:\Users\duxin\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Fab_files\SD_011'
+# folder_path = r'C:\Users\xingrui\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Fab_files\SD_011'
+# file_name = 'SD011AddDCtext'
+# project_name = os.path.join(folder_path, file_name)
+# start = time.time()
+# # h = DXF(project_name)
+# h = DXF(project_name)
+# h.trap = 0
+# Build_011(h,lead_number=8)
+# print('time spent:', time.time()-start, 's')
+
+from Builds.Build_SD012 import *
+folder_path = r'C:\Users\xingrui\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Fab_files\SD_012'
+file_name = 'SD012'
 project_name = os.path.join(folder_path, file_name)
 start = time.time()
 # h = DXF(project_name)
 h = DXF(project_name)
 h.trap = 0
-Build_011(h,lead_number=8)
+Build_012(h,lead_number=8)
 print('time spent:', time.time()-start, 's')

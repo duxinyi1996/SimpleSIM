@@ -60,6 +60,7 @@ class HFSS:
         self.w_finger_tren = 2.5  # width of the finger trenches
         self.s_finger = 12  # spacing between the fingers
         self.h_finger = 140  # height of the fingers
+        self.filter_in_len = 7500
 
         self.DCcpw_width = 3
         self.DCcpw_gap = 2.5
@@ -339,7 +340,7 @@ class HFSS:
         # Inductor loop
         command, offset_x, offset_y, radius_list = inductor(self.DC_bond_x,
                                                             self.DC_bond_y,
-                                                            total=7500,
+                                                            total=self.filter_in_len,
                                                             spacing=self.DCcpw_width + self.DCcpw_gap,
                                                             direction=-self.direction)
         x_list, y_list = construct(x + offset_x, y + offset_y, command)
