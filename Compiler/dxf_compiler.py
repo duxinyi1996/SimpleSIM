@@ -25,6 +25,7 @@ class DXF(HFSS):
         self.t = db.DCplxTrans(1/self.q.dbu)
         self.t_dxf = db.DCplxTrans(self.dxf_unit / self.unit)
         self.texts = []
+        self.compiler = 'dxf'
 
     def set_appearance(self, name, color, transparency):
         pass
@@ -149,6 +150,9 @@ class DXF(HFSS):
         if '.dxf' not in self.project_name:
             self.project_name += '.dxf'
         self.q.write(self.project_name)
+
+    def add_wirebonds(self, start, stop):
+        pass
 
     def tempsave(self):
         pass

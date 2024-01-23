@@ -7,6 +7,16 @@ if folder_path not in sys.path:
 from Compiler.dxf_compiler import *
 from Compiler.HFSS_compiler import *
 
+# from Builds.Build_SD013_test import *
+# folder_path = r'C:\Users\xingrui\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Designs\SD013test'
+# file_name = 'SD013test_bareline'
+# project_name = os.path.join(folder_path, file_name)
+# start = time.time()
+# h = HFSS(project_name)
+# h.trap = 0
+# Build_013_test(h,lead_number=0)
+# print('time spent:', time.time()-start, 's')
+
 # from Builds.Build_SD009 import *
 # folder_path = r'/Users/chellybone/Library/CloudStorage/OneDrive-WashingtonUniversityinSt.Louis/wustl/HLab/Project_MLGM/Fab_files/SD_010'
 # file_name = 'Test_009'
@@ -20,25 +30,40 @@ from Compiler.HFSS_compiler import *
 # Build_009(h,8)
 # print('time spent:', time.time()-start, 's')
 
-# from Builds.Build_SD011 import *
+# from Builds.Build_SD011_debug import *
+# from Builds.Build_SD014 import *
 # # folder_path = r'C:\Users\duxin\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Fab_files\SD_011'
-# folder_path = r'C:\Users\xingrui\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Fab_files\SD_011'
-# file_name = 'SD011AddDCtext'
+# folder_path = r'C:\Users\xingrui\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Designs\SD014'
+# file_name = 'temp_sim'
 # project_name = os.path.join(folder_path, file_name)
 # start = time.time()
 # # h = DXF(project_name)
-# h = DXF(project_name)
+# h = HFSS(project_name)
 # h.trap = 0
-# Build_011(h,lead_number=8)
+# Build_Utype(h,lead_number=3)
 # print('time spent:', time.time()-start, 's')
 
-from Builds.Build_SD012 import *
-folder_path = r'C:\Users\xingrui\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Fab_files\SD_012'
-file_name = 'SD012'
+# from Builds.Build_SD012 import *
+# folder_path = r'C:\Users\xingrui\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Fab_files\SD_012'
+# file_name = 'SD012_removePad'
+# project_name = os.path.join(folder_path, file_name)
+# start = time.time()
+# # h = DXF(project_name)
+# h = HFSS(project_name)
+# h.trap = 0
+# Build_012(h,lead_number=2)
+# print('time spent:', time.time()-start, 's')
+
+from Builds.Build_SD013 import *
+folder_path = r'C:\Users\xingrui\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Designs\SD013'
+file_name = 'temp_sim'
+
+# folder_path = r'C:\Users\xingrui\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Fab_files\SD_013'
+# file_name = 'SD013_121123'
 project_name = os.path.join(folder_path, file_name)
 start = time.time()
 # h = DXF(project_name)
-h = DXF(project_name)
+h = HFSS(project_name)
 h.trap = 0
-Build_012(h,lead_number=8)
+Build_013(h,lead_number=2)
 print('time spent:', time.time()-start, 's')

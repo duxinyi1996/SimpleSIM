@@ -13,8 +13,7 @@ def Build_011(object, lead_number=0):
     object.bond_pad_width = 300
     object.taper_l = object.bond_pad_width / 3 * 2
     object.bond_pad_l = object.bond_pad_width
-    # object.bond_pad_gap = 127
-    object.bond_pad_gap = 90
+    object.bond_pad_gap = 130
 
     object.toBeRemove = []
     object.toBeAdd = []
@@ -23,22 +22,28 @@ def Build_011(object, lead_number=0):
     object.modeler.create_air_region(x_pos=10, y_pos=10, z_pos=500, x_neg=10, y_neg=10, z_neg=10, is_percentage=True)
     # Draw Gnd
     object.gnd = [object.line(-object.sub_size_x / 2, 0, object.sub_size_x / 2, 0, width=object.sub_size_y, name='Gnd')]
+
+    feedline_l = 250
+    couple_l = 200
+    spacing = 20
+    radius = 50
+    start = [-1000,2500] # for Sd_011_bareline
+    stop = [-1000,-2500] # for Sd_011_bareline
+    # start = [-1000,2000] # for Sd_011_short
+    # stop = [-1000,-2000] # for Sd_011_short
+    # total_l = 11000 # for test 011, test 011_1 to test 011_6
+    total_l = 11000 # for SD_011, SD_011_withDC
+    # total_l = 8500 # for Sd_011_short
+
     # Draw feedline
-    x_list, y_list = construct(-1300, 2500, 'x300')
+    x_list, y_list = construct(start[0]-feedline_l, start[1], f'x{feedline_l}')
     feed_cen_1, feed_tren_1 = object.Feedline(x_list=x_list, y_list=y_list, double_end_taper=False)
-    x_list, y_list = construct(-1300, -2500, 'x300')
+    x_list, y_list = construct(stop[0]-feedline_l, stop[1], f'x{feedline_l}')
     feed_cen_2, feed_tren_2 = object.Feedline(x_list=x_list, y_list=y_list, double_end_taper=False)
     object.toBeRemove += [feed_tren_1, feed_tren_2]
     object.feedline = [feed_cen_1, feed_cen_2]
 
     # Draw resonator
-    couple_l = 200
-    spacing = 20
-    radius = 150
-    start = [-1000,2500]
-    stop = [1000,-2500]
-    # total_l = 11000 # for test 011, test 011_1 to test 011_6
-    total_l = 11000 # for SD_011, SD_011_withDC
     def meander_1(start,stop,couple_l,spacing,total_l,radius,x_turns1,x_turns2):
         x1 = start[0] - couple_l
         y1 = start[1]- (spacing + object.reson_width )* np.sign(start[1])
@@ -112,7 +117,8 @@ def Build_011(object, lead_number=0):
         return x1,y1,all_command
     
     
-    x1,y1,all_command = meander_1(start,stop,couple_l,spacing,total_l,radius,x_turns1=1500,x_turns2=1000)
+    # Original 011, 011-5, 011-7
+    x1,y1,all_command = meander_1(start,stop,couple_l,spacing,total_l,radius=150,x_turns1=1500,x_turns2=1000)
     # x1,y1,all_command = meander_2(start,stop,couple_l,spacing,total_l,radius,x_turns1=500)
     # print(all_command)
     x_list, y_list = construct(start_x=x1, start_y=y1, shape=all_command)
@@ -120,6 +126,7 @@ def Build_011(object, lead_number=0):
                     width=object.reson_width, gap=object.reson_gap, 
                     radius=radius, name='reson',
                     end=[1,1])
+    
     object.toBeRemove += [trench]
     object.toBeAdd += [center_line]
 

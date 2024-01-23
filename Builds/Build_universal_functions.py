@@ -104,3 +104,18 @@ def inductor(xpad, ypad, spacing, total, direction=1):
     command += f'y{direction * 250}'
     d['y'] += direction * 250
     return command, -d['x'], -d['y'], d['r']
+
+def clean_up(x_list, y_list):
+    x = []
+    y = []
+    for i in range(len(x_list)):
+        if i == 0:
+            x_pre = x_list[i]
+            y_pre = y_list[i]
+        else:
+            if x_list[i] == x_pre and y_list[i] == y_pre:
+                pass
+            else:
+                x += [x_list[i]]
+                y += [y_list[i]]
+    return x, y

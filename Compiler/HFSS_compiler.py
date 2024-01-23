@@ -14,6 +14,7 @@ from Builds.Build_universal_functions import *
 
 class HFSS:
     def __init__(self, project_name):
+        self.compiler = 'hfss'
         self.project_name = project_name
         self.startup()
 
@@ -36,7 +37,8 @@ class HFSS:
         self.feedline_width = 15
         self.feedline_gap = 9
         self.feedline_radius = 100
-        
+        self.openendTogap_ratio = 10
+
         self.bond_pad_width = 300
         self.taper_l = self.bond_pad_width / 3 * 2
         self.bond_pad_l = self.bond_pad_width
@@ -64,14 +66,19 @@ class HFSS:
 
         self.DCcpw_width = 3
         self.DCcpw_gap = 2.5
+        self.DCconnect_width = 5
+        self.DCconnect_gap = 3
+        self.DCconnect_radius = 15
 
         self.DC_bond_x = 280
         self.DC_bond_y = 300
         self.direction = -1
 
+        self.meshgrid = min(self.feedline_gap, self.reson_gap)
+
     def startup(self):
         self.non_graphical = False
-        self.desktop = pyaedt.Desktop(non_graphical=self.non_graphical, new_desktop_session=True, close_on_exit=False,
+        self.desktop = pyaedt.Desktop(non_graphical=self.non_graphical, new_desktop_session=False, close_on_exit=False,
                                       student_version=False)
         self.q = pyaedt.Hfss(projectname=self.project_name)
         self.modeler = self.q.modeler
@@ -79,7 +86,7 @@ class HFSS:
         self.modeler.model_units = self.unit
         self.desktop.disable_autosave()
 
-    def substrate(self, cen_x=0, cen_y=0, dx=4000, dy=4000, up_z=0, name='Si'):
+    def substrate(self, cen_x=0, cen_y=0, dx=4000, dy=4000, up_z=0, name='Substrate'):
         up_z = -self.metal_thickness / 2
         position = [cen_x - dx, cen_y - dy, up_z]
         size = [2 * dx, 2 * dy, -self.sub_thickness]
@@ -87,15 +94,18 @@ class HFSS:
             position=position, dimensions_list=size,
             name=f"{name}",
             matname=f"{self.sub_name}")
-        color = (128, 128, 128)
-        transparency = 0.8
-        self.set_appearance(name, color, transparency)
 
     # Basic_element: Change color
     def set_appearance(self, name, color, transparency):
-        obj = self.modeler[f"{name}"]
-        obj.color = color
-        obj.transparency = transparency
+        if isinstance(name, list):
+            for each in name:
+                obj = self.modeler[f"{each}"]
+                obj.color = color
+                obj.transparency = transparency
+        else:
+            obj = self.modeler[f"{name}"]
+            obj.color = color
+            obj.transparency = transparency
 
     # Basic_element: line
     def line(self, start_x, start_y, end_x, end_y, width, bottom_z=0, name=None):
@@ -195,10 +205,10 @@ class HFSS:
     # Advance_element: CPW lines
     def CPW_line(self, x_list, y_list, width, gap, radius=0.0, name=None, end=[0,0]):
         center_line = self.Polyline(x_list, y_list, radius, width, name=name)
-        x_list[0] = x_list[0] - gap*2*np.sign(x_list[1]-x_list[0])*end[0]
-        y_list[0] = y_list[0] - gap*2*np.sign(y_list[1]-y_list[0])*end[0]
-        x_list[-1] = x_list[-1] + gap*2*np.sign(x_list[-1]-x_list[-2])*end[1]
-        y_list[-1] = y_list[-1] + gap*2*np.sign(y_list[-1]-y_list[-2])*end[1]
+        x_list[0] = x_list[0] - gap*self.openendTogap_ratio*np.sign(x_list[1]-x_list[0])*end[0]
+        y_list[0] = y_list[0] - gap*self.openendTogap_ratio*np.sign(y_list[1]-y_list[0])*end[0]
+        x_list[-1] = x_list[-1] + gap*self.openendTogap_ratio*np.sign(x_list[-1]-x_list[-2])*end[1]
+        y_list[-1] = y_list[-1] + gap*self.openendTogap_ratio*np.sign(y_list[-1]-y_list[-2])*end[1]
         trench = self.Polyline(x_list, y_list, radius, width + gap * 2, name=name + '_trench')
         return center_line, trench
 
@@ -276,8 +286,7 @@ class HFSS:
     # Customized_element: build resonator
     def CPW_reson(self, x, y):
         start_x = -self.reson_l_couple / 2 + x
-        start_y = (
-                              self.feedline_width / 2 + self.feedline_gap + self.reson_couple_d) + self.reson_gap + self.reson_width / 2 + self.reson_l_open
+        start_y = (self.feedline_width / 2 + self.feedline_gap + self.reson_couple_d) + self.reson_gap + self.reson_width / 2 + self.reson_l_open
         start_y = start_y * self.direction + y
 
         if self.reson_l_couple - 300 < self.meander_xlen:
@@ -313,8 +322,8 @@ class HFSS:
             center_line = self.modeler.unite([center_line, cen1, cen2])
             trench = self.modeler.unite([trench, tren1, tren2])
         else:
-            tren = self.Polyline(x_list=[x_list[-1],x_list[-1]+self.feedline_gap*2*np.sign(x_list[-1]-x_list[0])], 
-                                 y_list=[y_list[-1],y_list[-1]+self.feedline_gap*2*np.sign(y_list[-1]-y_list[0])], 
+            tren = self.Polyline(x_list=[x_list[-1],x_list[-1]+self.feedline_gap* self.openendTogap_ratio *np.sign(x_list[-1]-x_list[0])], 
+                                 y_list=[y_list[-1],y_list[-1]+self.feedline_gap* self.openendTogap_ratio *np.sign(y_list[-1]-y_list[0])], 
                                  radius=self.feedline_radius, 
                                  width=self.feedline_width+self.feedline_gap*2)
             center_line = self.modeler.unite([center_line, cen1])
@@ -336,7 +345,15 @@ class HFSS:
                              name='finger_cap_trench')
             cen_list += [cen]
             tren_list += [tren]
-
+        ym = y+ self.n_finger * self.s_finger * self.direction + 10
+        cen, tren = self.CPW_line(x_list=[x,x], y_list=[y, ym],
+                                  width=self.DCcpw_width,
+                                  gap=self.DCcpw_gap,
+                                  radius=self.DCconnect_radius,
+                                  name='Finger_cap')
+        cen_list += [cen]
+        tren_list += [tren]
+        y = ym
         # Inductor loop
         command, offset_x, offset_y, radius_list = inductor(self.DC_bond_x,
                                                             self.DC_bond_y,
@@ -370,46 +387,44 @@ class HFSS:
         trench = self.modeler.unite(tren_list)
         return center, trench
     
-    def draw_reson(self, lshort, x, y, lead_number=0):
-        self.direction = - np.sign(y)
-        self.reson_l_short = lshort
-        cen, tren = self.CPW_reson(x=x, y=y)
-        open_end_edge = self.open_end_y - self.open_end_size_y * (-self.direction)
-        open_end = self.line(start_x=self.open_end_x,
-                             start_y=self.open_end_y,
-                             end_x=self.open_end_x,
-                             end_y=open_end_edge,
-                             width=self.open_end_size_x)
-        self.toBeRemove += [tren, open_end]
-        self.toBeAdd += [cen]
-        for i in range(lead_number):
-            x1 = self.open_end_x + (2 * i - lead_number + 1) / 2 * (self.open_end_size_x / lead_number)
-            x2 = self.open_end_x + (2 * i - lead_number + 1) / 2 * 280
-            y1 = open_end_edge
-            if i % 2 == 0:
-                y2 = open_end_edge + self.direction * 200
-            else:
-                y2 = open_end_edge + self.direction * 900
-            ym = y1 + self.direction * (lead_number / 2 + 1 - abs(i - lead_number / 2)) * 20
-            ym1 = ym + self.direction * 40
-            connect, connect_tren = self.CPW_line(x_list=[x1, x1, x2, x2],
-                                                  y_list=[y1, ym, ym, ym1],
-                                                  width=5,
-                                                  gap=3,
-                                                  radius=15,
+    def single_filter(self,x_list,y_list):
+        cen_list = []
+        tren_list = []
+        connect, connect_tren = self.CPW_line(x_list=x_list[:-1],
+                                                  y_list=y_list[:-1],
+                                                  width=self.DCconnect_width,
+                                                  gap=self.DCconnect_gap,
+                                                  radius=self.DCconnect_radius,
                                                   name='connect'
                                                   )
-            taper, taper_tren = self.CPW_taper(x_list=[x2, x2],
-                                               y_list=[ym1, y2],
-                                               width_list=[5, self.DCcpw_width],
-                                               gap_list=[3, self.DCcpw_gap],
-                                               direction='y')
-            DC_lead, DC_lead_tren = self.DC_filter(x2, y2)
-            DC_lead_sum = self.modeler.unite([DC_lead, taper, connect])
-            self.toBeRemove += [taper_tren, DC_lead_tren, connect_tren]
-            self.DCleads += [DC_lead_sum]
-            self.tempsave()
+        cen_list += [connect]
+        tren_list += [connect_tren]
 
+        if y_list[-2]==y_list[-1]:
+            direction = 'x'
+        else:
+            direction = 'y'
+        taper, taper_tren = self.CPW_taper(x_list=x_list[-2:],
+                                            y_list=y_list[-2:],
+                                            width_list=[self.DCconnect_width, self.DCcpw_width],
+                                            gap_list=[self.DCconnect_gap, self.DCcpw_gap],
+                                            direction=direction)
+        cen_list += [taper]
+        tren_list += [taper_tren]
+
+        DC_lead, DC_lead_tren = self.DC_filter(x_list[-1], y_list[-1])
+        cen_list += [DC_lead]
+        tren_list += [DC_lead_tren]
+
+        center = self.modeler.unite(cen_list)
+        trench = self.modeler.unite(tren_list)
+        return  center, trench
+    
+    def add_wirebonds(self, start, stop):
+        self.modeler.create_bondwire(start_position=[start[0], start[1], self.sub_thickness/2],
+                                         end_position=[stop[0], stop[1], self.sub_thickness/2],
+                                         matname=self.metal_name)
+        
     def FakeWirebonds(self):
         index = 0
         x0 = -self.sub_size_x / 2
@@ -433,21 +448,77 @@ class HFSS:
                                           [x_start - d1 / 2, y_start - d2 / 2, 0]],
                                          name=f'DC_{index}',
                                          cover_surface=True)
-            self.modeler.create_bondwire(start_position=[x_start, y_start, self.sub_thickness / 2],
-                                         end_position=[x, y, self.sub_thickness / 2],
-                                         matname=self.metal_name)
+            self.add_wirebonds([x_start, y_start],[x,y])
             self.q.assign_voltage_source_to_sheet(sheet_name=f'DC_{index}',
                                                   axisdir=[[x_start, y_start - d2 / 2, 0],
                                                            [x_start, y_start - d1 / 2, 0]])
         self.modeler.subtract([self.modeler['Gnd_0']], empty, keep_originals=False)
 
+    def build_region(self,dx,dy,cen_x=0,cen_y=0):
+        '''Huge air box'''
+        # self.modeler.create_air_region(x_pos=10, y_pos=10, z_pos=500, x_neg=10, y_neg=10, z_neg=10, is_percentage=True)
+        '''Finite air box->vacuum'''
+        # self.modeler.create_air_region(x_pos=0, y_pos=0, z_pos=500, x_neg=0, y_neg=0, z_neg=0, is_percentage=True)
+        # region = self.modeler["Region"]
+        # region.material_name = 'vacuum'
+        '''Handmade vacuum box'''
+        up_z = self.metal_thickness / 2 - 2*self.sub_thickness 
+        position = [cen_x - dx, cen_y - dy, up_z]
+        size = [2 * dx, 2 * dy, 5*self.sub_thickness]
+        self.modeler.create_box(
+            position=position, dimensions_list=size,
+            name=f"Region",
+            matname=f"vacuum")
+        color = (128, 128, 128)
+        transparency = 0.1
+        self.set_appearance('Region', color, transparency)
+    
+    def thickness0(self):
+        if self.metal_thickness == 0:
+            list = []
+            list += self.modeler.get_objects_w_string('gnd',case_sensitive=False)
+            list += self.modeler.get_objects_w_string('feedline',case_sensitive=False)
+            list += self.modeler.get_objects_w_string('reson',case_sensitive=False)
+            list += self.modeler.get_objects_w_string('finger_cap',case_sensitive=False)
+            list += self.modeler.get_objects_w_string('inductor',case_sensitive=False)
+            self.q.assign_perfecte_to_sheets(list)
+
+    def create_mesh(self):
+        unit = self.meshgrid
+        mesh = self.q.mesh.assign_length_mesh(self.modeler.get_objects_w_string('feedline',case_sensitive=False),
+                                              isinside=False, maxlength=unit, maxel=None, meshop_name='feedline_mesh')
+        mesh = self.q.mesh.assign_length_mesh(self.modeler.get_objects_w_string('reson',case_sensitive=False),
+                                              isinside=False, maxlength=unit, maxel=None, meshop_name='reson_mesh')
+        mesh = self.q.mesh.assign_length_mesh(self.modeler.get_objects_w_string('finger_cap',case_sensitive=False),
+                                              isinside=False, maxlength=unit, maxel=None, meshop_name='finger_cap_mesh')
+        mesh = self.q.mesh.assign_length_mesh(self.modeler.get_objects_w_string('inductor',case_sensitive=False),
+                                              isinside=False, maxlength=unit, maxel=None, meshop_name='inductor_mesh')
+    def beauty(self):
+        region_list = self.modeler.get_objects_w_string('region',case_sensitive=False)
+        self.set_appearance(name=region_list,color=(200,200,200),transparency=0.9)
+        gnd_list = self.modeler.get_objects_w_string('gnd',case_sensitive=False)
+        self.set_appearance(name=gnd_list,color=(0,127,255),transparency=0)
+        feedline_list = self.modeler.get_objects_w_string('feedline',case_sensitive=False)
+        self.set_appearance(name=feedline_list,color=(0,255,0),transparency=0)
+        reson_list = self.modeler.get_objects_w_string('reson',case_sensitive=False)
+        self.set_appearance(name=reson_list,color=(255,0,0),transparency=0)
+        dc_list = self.modeler.get_objects_w_string('finger_cap',case_sensitive=False) 
+        dc_list += self.modeler.get_objects_w_string('inductor',case_sensitive=False)
+        self.set_appearance(name=dc_list,color=(128,0,128),transparency=0)
+
     def save(self):
         # self.FakeWirebonds()
+        self.thickness0()
+        self.create_mesh()
+        self.beauty()
         self.q.save_project()
         self.desktop.enable_autosave()
 
     def tempsave(self):
         self.q.save_project()
+    
+    def add_label(self,*args):
+        pass
 
 
 global counter
