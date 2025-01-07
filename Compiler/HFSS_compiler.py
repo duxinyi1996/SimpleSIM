@@ -78,7 +78,7 @@ class HFSS:
 
     def startup(self):
         self.non_graphical = False
-        self.desktop = pyaedt.Desktop(non_graphical=self.non_graphical, new_desktop_session=False, close_on_exit=False,
+        self.desktop = pyaedt.Desktop(non_graphical=self.non_graphical, new_desktop=False, close_on_exit=False,
                                       student_version=False)
         self.q = pyaedt.Hfss(projectname=self.project_name)
         self.modeler = self.q.modeler

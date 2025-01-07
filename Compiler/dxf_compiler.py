@@ -26,6 +26,8 @@ class DXF(HFSS):
         self.t_dxf = db.DCplxTrans(self.dxf_unit / self.unit)
         self.texts = []
         self.compiler = 'dxf'
+        self.feedline = None
+        self.DCleads = None
 
     def set_appearance(self, name, color, transparency):
         pass
@@ -146,7 +148,8 @@ class DXF(HFSS):
         self.taglist = ['GND', 'Feedline', 'Reson', 'DCleads','Labels']
         self.add_trap()
         for i in range(0, len(self.mylist)):
-            draw(self.taglist[i], self.mylist[i])
+            if self.mylist[i] is not None:
+                draw(self.taglist[i], self.mylist[i])
         if '.dxf' not in self.project_name:
             self.project_name += '.dxf'
         self.q.write(self.project_name)
