@@ -62,18 +62,11 @@ print('time spent:', time.time()-start, 's')
 # # file_name = 'SD013_121123'
 # project_name = os.path.join(folder_path, file_name)
 # start = time.time()
-<<<<<<< Updated upstream
-# # h = DXF(project_name)
-# h = HFSS(file_name)
-=======
-# # h = KLAYOUT(project_name)
-# h = HFSS(project_name)
->>>>>>> Stashed changes
+
 # h.trap = 0
 # Build_013(h,lead_number=2)
 # print('time spent:', time.time()-start, 's')
 
-<<<<<<< Updated upstream
 # from Builds.Build_100nH import *
 # # folder_path = r'D:\OneDrive - Washington University in St. Louis\wustl\HLab\Project_gPhotonDetector\Design'
 # file_name = '100nH_generated'
@@ -84,7 +77,7 @@ print('time spent:', time.time()-start, 's')
 # # h.trap = 0
 # Build_SingleFilter(h,lead_number=1)
 # print('time spent:', time.time()-start, 's')
-=======
+
 from Builds.Build_100nH import *
 folder_path = r'D:\OneDrive - Washington University in St. Louis\wustl\HLab\Project_gPhotonDetector\Design'
 file_name = '100nH_generated'
@@ -95,4 +88,4 @@ h = KLAYOUT(project_name)
 h.trap = 0
 Build_SingleFilter(h,lead_number=1)
 print('time spent:', time.time()-start, 's')
->>>>>>> Stashed changes
+
