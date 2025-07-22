@@ -80,7 +80,7 @@ class HFSS:
         self.non_graphical = False
         self.desktop = pyaedt.Desktop(non_graphical=self.non_graphical, new_desktop=False, close_on_exit=False,
                                       student_version=False)
-        self.q = pyaedt.Hfss(projectname=self.project_name)
+        self.q = pyaedt.Hfss(project=self.project_name)
         self.modeler = self.q.modeler
         self.unit = 'um'
         self.modeler.model_units = self.unit
@@ -91,9 +91,9 @@ class HFSS:
         position = [cen_x - dx, cen_y - dy, up_z]
         size = [2 * dx, 2 * dy, -self.sub_thickness]
         self.substrate = self.modeler.create_box(
-            position=position, dimensions_list=size,
+            origin=position, sizes=size,
             name=f"{name}",
-            matname=f"{self.sub_name}")
+            material=f"{self.sub_name}")
 
     # Basic_element: Change color
     def set_appearance(self, name, color, transparency):
@@ -108,19 +108,20 @@ class HFSS:
             obj.transparency = transparency
 
     # Basic_element: line
-    def line(self, start_x, start_y, end_x, end_y, width, bottom_z=0, name=None):
+    def line(self, start_x, start_y, end_x, end_y, width, bottom_z=0, name='Line'):
         line = self.modeler.create_polyline(
-            [[start_x, start_y, bottom_z], [end_x, end_y, bottom_z]],
+            [floall([start_x, start_y, bottom_z]), 
+             floall([end_x, end_y, bottom_z])],
             name=newname(name),
-            matname=f"{self.metal_name}",
+            material=f"{self.metal_name}",
             xsection_type="Rectangle",
-            xsection_width=f"{width}",
+            xsection_width=f"{float(width)}",
             xsection_height=f"{self.metal_thickness}",
         )
         return line
 
     # Basic_element: arc
-    def arc(self, start_x, start_y, end_x, end_y, turning_x, turning_y, width, bottom_z=0, name=None):
+    def arc(self, start_x, start_y, end_x, end_y, turning_x, turning_y, width, bottom_z=0, name='Arc'):
         start_point = [start_x, start_y, bottom_z]
         end_point = [end_x, end_y, bottom_z]
         cen_x = start_x + end_x - turning_x
@@ -130,10 +131,10 @@ class HFSS:
         dy = turning_y - cen_y
         mid_point = [cen_x + dx / np.sqrt(2), cen_y + dy / np.sqrt(2), bottom_z]
         line = self.modeler.create_polyline(
-            [start_point, mid_point, end_point],
+            [floall(start_point), floall(mid_point), floall(end_point)],
             segment_type='Arc',
             name=newname(name),
-            matname=f"{self.metal_name}",
+            material=f"{self.metal_name}",
             xsection_type="Rectangle",
             xsection_width=f"{width}",
             xsection_height=f"{self.metal_thickness}",
@@ -141,32 +142,32 @@ class HFSS:
         return line
 
     # Basic_element: taper line
-    def taper(self, start_x, start_y, end_x, end_y, start_width, end_width, direction='x', bottom_z=0, name=None):
+    def taper(self, start_x, start_y, end_x, end_y, start_width, end_width, direction='x', bottom_z=0, name='Taper'):
         if direction == 'x':
-            taper = self.modeler.create_polyline([[start_x, start_y - start_width / 2, bottom_z],
-                                                  [start_x, start_y + start_width / 2, bottom_z],
-                                                  [end_x, end_y + end_width / 2, bottom_z],
-                                                  [end_x, end_y - end_width / 2, bottom_z],
-                                                  [start_x, start_y - start_width / 2, bottom_z]],
+            taper = self.modeler.create_polyline([floall([start_x, start_y - start_width / 2, bottom_z]),
+                                                  floall([start_x, start_y + start_width / 2, bottom_z]),
+                                                  floall([end_x, end_y + end_width / 2, bottom_z]),
+                                                  floall([end_x, end_y - end_width / 2, bottom_z]),
+                                                  floall([start_x, start_y - start_width / 2, bottom_z])],
                                                  cover_surface=True,
                                                  xsection_orient='X',
-                                                 matname=f'{self.metal_name}',
+                                                 material=f'{self.metal_name}',
                                                  name=newname(name))
         else:
-            taper = self.modeler.create_polyline([[start_x - start_width / 2, start_y, bottom_z],
-                                                  [start_x + start_width / 2, start_y, bottom_z],
-                                                  [end_x + end_width / 2, end_y, bottom_z],
-                                                  [end_x - end_width / 2, end_y, bottom_z],
-                                                  [start_x - start_width / 2, start_y, bottom_z]],
+            taper = self.modeler.create_polyline([floall([start_x - start_width / 2, start_y, bottom_z]),
+                                                  floall([start_x + start_width / 2, start_y, bottom_z]),
+                                                  floall([end_x + end_width / 2, end_y, bottom_z]),
+                                                  floall([end_x - end_width / 2, end_y, bottom_z]),
+                                                  floall([start_x - start_width / 2, start_y, bottom_z])],
                                                  cover_surface=True,
                                                  xsection_orient='Y',
-                                                 matname=f'{self.metal_name}',
+                                                 material=f'{self.metal_name}',
                                                  name=newname(name))
         taper = self.modeler.thicken_sheet(taper, thickness=self.metal_thickness, bBothSides=True)
         return taper
 
     # Advance_element: curved polyline
-    def Polyline(self, x_list, y_list, radius, width, bottom_z=0, name=None):
+    def Polyline(self, x_list, y_list, radius, width, bottom_z=0, name='Polyline'):
         x_last = x_list[0]
         y_last = y_list[0]
         segment = []
@@ -185,31 +186,32 @@ class HFSS:
                 x2 = x + r * np.sign(x_next - x)
                 y2 = y + r * np.sign(y_next - y)
                 segment += [self.line(x_last, y_last, x1, y1,
-                                      name=name,
+                                      name=newname(name),
                                       width=width,
                                       bottom_z=bottom_z)]
                 segment += [self.arc(x1, y1, x2, y2, x, y,
-                                     name=name,
+                                     name=newname(name),
                                      width=width,
                                      bottom_z=bottom_z)]
                 x_last = x2
                 y_last = y2
             else:
                 segment += [self.line(x_last, y_last, x, y,
-                                      name=name,
+                                      name=newname(name),
                                       width=width,
-                                      bottom_z=bottom_z, )]
+                                      bottom_z=bottom_z,
+                                      )]
         polyline = self.modeler.unite(segment)
         return polyline
 
     # Advance_element: CPW lines
-    def CPW_line(self, x_list, y_list, width, gap, radius=0.0, name=None, end=[0,0]):
-        center_line = self.Polyline(x_list, y_list, radius, width, name=name)
+    def CPW_line(self, x_list, y_list, width, gap, radius=0.0, name='CPWline', end=[0,0]):
+        center_line = self.Polyline(x_list, y_list, radius, width, name=newname(name))
         x_list[0] = x_list[0] - gap*self.openendTogap_ratio*np.sign(x_list[1]-x_list[0])*end[0]
         y_list[0] = y_list[0] - gap*self.openendTogap_ratio*np.sign(y_list[1]-y_list[0])*end[0]
         x_list[-1] = x_list[-1] + gap*self.openendTogap_ratio*np.sign(x_list[-1]-x_list[-2])*end[1]
         y_list[-1] = y_list[-1] + gap*self.openendTogap_ratio*np.sign(y_list[-1]-y_list[-2])*end[1]
-        trench = self.Polyline(x_list, y_list, radius, width + gap * 2, name=name + '_trench')
+        trench = self.Polyline(x_list, y_list, radius, width + gap * 2, name=newname(name) + '_trench')
         return center_line, trench
 
     # Advance_element: taper CPW lines
@@ -218,12 +220,12 @@ class HFSS:
                                  x_list[1], y_list[1],
                                  width_list[0], width_list[1],
                                  direction=direction,
-                                 name=name + 'taper')
+                                 name=newname(name) + 'taper')
         trench = self.taper(x_list[0], y_list[0],
                             x_list[1], y_list[1],
                             width_list[0] + 2 * gap_list[0], width_list[1] + 2 * gap_list[1],
                             direction=direction,
-                            name=name + 'taper_trench')
+                            name=newname(name) + 'taper_trench')
 
         return center_line, trench
 
@@ -278,10 +280,10 @@ class HFSS:
         p3 = [self.port_end_x + dx, self.port_end_y + dy, 0]
         p4 = [self.port_end_x - dx, self.port_end_y - dy, 0]
         name = newname('port')
-        port = self.modeler.create_polyline([p1, p2, p3, p4, p1], name=name, cover_surface=True)
-        self.q.create_lumped_port_to_sheet(name,
-                                           axisdir=[start, end], impedance=50,
-                                           portname='port')
+        port = self.modeler.create_polyline([p1, p2, p3, p4, p1], name=newname(name), cover_surface=True)
+        # self.q.create_lumped_port_to_sheet(name,
+        #                                    axisdir=[start, end], impedance=50,
+        #                                    portname='port')
 
     # Customized_element: build resonator
     def CPW_reson(self, x, y):
@@ -423,7 +425,7 @@ class HFSS:
     def add_wirebonds(self, start, stop):
         self.modeler.create_bondwire(start_position=[start[0], start[1], self.sub_thickness/2],
                                          end_position=[stop[0], stop[1], self.sub_thickness/2],
-                                         matname=self.metal_name)
+                                         material=self.metal_name)
         
     def FakeWirebonds(self):
         index = 0
@@ -468,7 +470,7 @@ class HFSS:
         self.modeler.create_box(
             position=position, dimensions_list=size,
             name=f"Region",
-            matname=f"vacuum")
+            material=f"vacuum")
         color = (128, 128, 128)
         transparency = 0.1
         self.set_appearance('Region', color, transparency)
@@ -509,7 +511,7 @@ class HFSS:
     def save(self):
         # self.FakeWirebonds()
         self.thickness0()
-        self.create_mesh()
+        # self.create_mesh()
         self.beauty()
         self.q.save_project()
         self.desktop.enable_autosave()
@@ -528,6 +530,16 @@ def newname(name):
     global counter
     if name is None:
         name = ''
-    name = name + f'_{counter}'
+    if "_" in name:
+        name = name.split('_')[0] + f'_{counter}'
+    else:
+        name = name + f'_{counter}'
     counter += 1
     return name
+
+def floall(whatever):
+    # somehow aedt don't like np.int64 or np.float64, converting it back manually
+    if isinstance(whatever,list):
+        return [float(x) for x in whatever]
+    else:
+        return float(whatever)

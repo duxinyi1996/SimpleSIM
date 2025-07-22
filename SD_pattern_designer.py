@@ -7,15 +7,15 @@ if folder_path not in sys.path:
 from Compiler.dxf_compiler import *
 from Compiler.HFSS_compiler import *
 
-# from Builds.Build_SD013_test import *
-# folder_path = r'C:\Users\xingrui\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Designs\SD013test'
-# file_name = 'SD013test_bareline'
-# project_name = os.path.join(folder_path, file_name)
-# start = time.time()
-# h = HFSS(project_name)
-# h.trap = 0
-# Build_013_test(h,lead_number=0)
-# print('time spent:', time.time()-start, 's')
+from Builds.Build_SD013_test import *
+folder_path = r'C:\Users\xingrui\OneDrive - Washington University in St. Louis\wustl\HLab\Project_MLGM\Designs\SD013test'
+file_name = 'SD013test_bareline'
+project_name = os.path.join(folder_path, file_name)
+start = time.time()
+h = HFSS(file_name)
+h.trap = 0
+Build_013_test(h,lead_number=0)
+print('time spent:', time.time()-start, 's')
 
 # from Builds.Build_SD009 import *
 # folder_path = r'/Users/chellybone/Library/CloudStorage/OneDrive-WashingtonUniversityinSt.Louis/wustl/HLab/Project_MLGM/Fab_files/SD_010'
@@ -63,18 +63,18 @@ from Compiler.HFSS_compiler import *
 # project_name = os.path.join(folder_path, file_name)
 # start = time.time()
 # # h = DXF(project_name)
-# h = HFSS(project_name)
+# h = HFSS(file_name)
 # h.trap = 0
 # Build_013(h,lead_number=2)
 # print('time spent:', time.time()-start, 's')
 
-from Builds.Build_100nH import *
-folder_path = r'D:\OneDrive - Washington University in St. Louis\wustl\HLab\Project_gPhotonDetector\Design'
-file_name = '100nH_generated'
-project_name = os.path.join(folder_path, file_name)
-start = time.time()
-h = DXF(project_name)
-# h = HFSS(project_name)
-h.trap = 0
-Build_SingleFilter(h,lead_number=1)
-print('time spent:', time.time()-start, 's')
+# from Builds.Build_100nH import *
+# # folder_path = r'D:\OneDrive - Washington University in St. Louis\wustl\HLab\Project_gPhotonDetector\Design'
+# file_name = '100nH_generated'
+# project_name = os.path.join(folder_path, file_name)
+# start = time.time()
+# # h = DXF(project_name)
+# h = HFSS(file_name)
+# # h.trap = 0
+# Build_SingleFilter(h,lead_number=1)
+# print('time spent:', time.time()-start, 's')

@@ -35,6 +35,7 @@ def Build_013_test(object, lead_number=0):
     start = [x1, y1 + (spacing + object.reson_width )* np.sign(y1)]
     stop = [x2, y2 + (spacing + object.reson_width )* np.sign(y2)]
     x_list, y_list = construct(start[0]-feedline_l + couple_l, start[1], f'x{feedline_l}')
+
     feed_cen_1, feed_tren_1 = object.Feedline(x_list=x_list, y_list=y_list, double_end_taper=False)
     x_list, y_list = construct(stop[0]-feedline_l + couple_l, stop[1], f'x{feedline_l}')
     feed_cen_2, feed_tren_2 = object.Feedline(x_list=x_list, y_list=y_list, double_end_taper=False)
@@ -56,7 +57,7 @@ def Build_013_test(object, lead_number=0):
         remain = total_l - abs(x_turns1-x1) - abs(x_turns1-x2) - abs(y1-y2)
         turns = remain//(2*abs(x_turns1 - x_turns2))
         shift = remain%(2*abs(x_turns1 - x_turns2))
-        print(remain,turns,shift)
+        # print(remain,turns,shift)
         x = x1
         y = y1
         command = []

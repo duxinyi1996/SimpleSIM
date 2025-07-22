@@ -7,7 +7,7 @@ if folder_path not in sys.path:
     sys.path.append(
         folder_path)  # easier to open driver files as long as Simple_DAQ.py is in the same folder with drivers
 import os, sys
-import pya as db
+import klayout.db as db
 from Compiler.HFSS_compiler import *
 import numpy as np
 
