@@ -4,7 +4,7 @@ folder_path = os.getcwd()
 if folder_path not in sys.path:
 	sys.path.append(folder_path)
 
-from Compiler.dxf_compiler import *
+from Compiler.Klayout_compiler import *
 from Compiler.HFSS_compiler import *
 
 from Builds.Build_SD013_test import *
@@ -25,7 +25,7 @@ print('time spent:', time.time()-start, 's')
 # # h = HFSS(project_name)
 # # h.trap = False
 # # Build_hBN_waveguide(h,)
-# h = DXF(project_name)
+# h = KLAYOUT(project_name)
 # h.trap = True
 # Build_009(h,8)
 # print('time spent:', time.time()-start, 's')
@@ -37,7 +37,7 @@ print('time spent:', time.time()-start, 's')
 # file_name = 'temp_sim'
 # project_name = os.path.join(folder_path, file_name)
 # start = time.time()
-# # h = DXF(project_name)
+# # h = KLAYOUT(project_name)
 # h = HFSS(project_name)
 # h.trap = 0
 # Build_Utype(h,lead_number=3)
@@ -48,7 +48,7 @@ print('time spent:', time.time()-start, 's')
 # file_name = 'SD012_removePad'
 # project_name = os.path.join(folder_path, file_name)
 # start = time.time()
-# # h = DXF(project_name)
+# # h = KLAYOUT(project_name)
 # h = HFSS(project_name)
 # h.trap = 0
 # Build_012(h,lead_number=2)
@@ -62,12 +62,18 @@ print('time spent:', time.time()-start, 's')
 # # file_name = 'SD013_121123'
 # project_name = os.path.join(folder_path, file_name)
 # start = time.time()
+<<<<<<< Updated upstream
 # # h = DXF(project_name)
 # h = HFSS(file_name)
+=======
+# # h = KLAYOUT(project_name)
+# h = HFSS(project_name)
+>>>>>>> Stashed changes
 # h.trap = 0
 # Build_013(h,lead_number=2)
 # print('time spent:', time.time()-start, 's')
 
+<<<<<<< Updated upstream
 # from Builds.Build_100nH import *
 # # folder_path = r'D:\OneDrive - Washington University in St. Louis\wustl\HLab\Project_gPhotonDetector\Design'
 # file_name = '100nH_generated'
@@ -78,3 +84,15 @@ print('time spent:', time.time()-start, 's')
 # # h.trap = 0
 # Build_SingleFilter(h,lead_number=1)
 # print('time spent:', time.time()-start, 's')
+=======
+from Builds.Build_100nH import *
+folder_path = r'D:\OneDrive - Washington University in St. Louis\wustl\HLab\Project_gPhotonDetector\Design'
+file_name = '100nH_generated'
+project_name = os.path.join(folder_path, file_name)
+start = time.time()
+h = KLAYOUT(project_name)
+# h = HFSS(project_name)
+h.trap = 0
+Build_SingleFilter(h,lead_number=1)
+print('time spent:', time.time()-start, 's')
+>>>>>>> Stashed changes

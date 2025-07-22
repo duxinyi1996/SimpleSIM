@@ -14,7 +14,6 @@ from Builds.Build_universal_functions import *
 
 class HFSS:
     def __init__(self, project_name):
-        self.compiler = 'hfss'
         self.project_name = project_name
         self.startup()
 
@@ -285,7 +284,7 @@ class HFSS:
         #                                    axisdir=[start, end], impedance=50,
         #                                    portname='port')
 
-    # Customized_element: build resonator
+    # Customized_element: build CPW resonator
     def CPW_reson(self, x, y):
         start_x = -self.reson_l_couple / 2 + x
         start_y = (self.feedline_width / 2 + self.feedline_gap + self.reson_couple_d) + self.reson_gap + self.reson_width / 2 + self.reson_l_open
@@ -311,7 +310,7 @@ class HFSS:
                                             radius=self.meander_radius, name='Reson')
         return center_line, trench
 
-    # Customized_element: build feedline
+    # Customized_element: build CPW feedline
     def Feedline(self, x_list, y_list, double_end_taper=True):
         center_line, trench = self.CPW_line(x_list, y_list,
                                             width=self.feedline_width,
@@ -334,6 +333,7 @@ class HFSS:
 
     # Customized_element: build DC filter
     def DC_filter(self, x, y):
+        # Capacitive fingers
         cen_list = []
         tren_list = []
         for i in range(self.n_finger):
@@ -356,6 +356,7 @@ class HFSS:
         cen_list += [cen]
         tren_list += [tren]
         y = ym
+
         # Inductor loop
         command, offset_x, offset_y, radius_list = inductor(self.DC_bond_x,
                                                             self.DC_bond_y,
