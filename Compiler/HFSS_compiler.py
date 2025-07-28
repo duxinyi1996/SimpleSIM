@@ -228,21 +228,27 @@ class HFSS:
 
         return center_line, trench
 
-    # Advance_element: Bond pads for feedline
-    def Bond_pad(self, x, y, direction='x'):
+    # Advance_element: Bond pads for feedline, input is list of x and y extended from the bond pads, length>=2
+    def Bond_pad(self, x_list, y_list):
+        x = x_list[0]
+        y = y_list[0]
+        x_1 = x_list[1]
+        y_1 = y_list[1]
         new_gap = self.bond_pad_gap
-        if direction == 'x':
-            newx = x + self.taper_l * np.sign(x)
+        if abs(y-y_1)<abs(x-x_1):
+            direction = 'x'
+            newx = x + self.taper_l * np.sign(x-x_1)
             newy = y
-            self.port_end_x = newx + self.bond_pad_l * np.sign(x)
-            self.port_start_x = self.port_end_x + new_gap * np.sign(x)
+            self.port_end_x = newx + self.bond_pad_l * np.sign(x-x_1)
+            self.port_start_x = self.port_end_x + new_gap * np.sign(x-x_1)
             self.port_end_y = y
             self.port_start_y = y
         else:
+            direction = 'y'
             newx = x
-            newy = y + self.taper_l * np.sign(y)
-            self.port_end_y = newy + self.bond_pad_l * np.sign(y)
-            self.port_start_y = self.port_end_y + new_gap * np.sign(y)
+            newy = y + self.taper_l * np.sign(y-y_1)
+            self.port_end_y = newy + self.bond_pad_l * np.sign(y-y_1)
+            self.port_start_y = self.port_end_y + new_gap * np.sign(y-y_1)
             self.port_end_x = x
             self.port_start_x = x
         taper, taper_tren = self.CPW_taper(x_list=[x, newx],
@@ -316,10 +322,10 @@ class HFSS:
                                             width=self.feedline_width,
                                             gap=self.feedline_gap,
                                             radius=self.feedline_radius,
-                                            name='feedline')
-        cen1, tren1 = self.Bond_pad(x_list[0], y_list[0])
+                                            name='feedline')     
+        cen1, tren1 = self.Bond_pad(x_list, y_list)
         if double_end_taper:
-            cen2, tren2 = self.Bond_pad(x_list[-1], y_list[-1])
+            cen2, tren2 = self.Bond_pad(x_list[::-1], y_list[::-1])
             center_line = self.modeler.unite([center_line, cen1, cen2])
             trench = self.modeler.unite([trench, tren1, tren2])
         else:
