@@ -12,7 +12,7 @@ from Compiler.HFSS_compiler import *
 import numpy as np
 
 
-class DXF(HFSS):
+class KLAYOUT(HFSS):
     def startup(self):
         self.trap = True
         self.label = True
@@ -25,7 +25,7 @@ class DXF(HFSS):
         self.t = db.DCplxTrans(1/self.q.dbu)
         self.t_dxf = db.DCplxTrans(self.dxf_unit / self.unit)
         self.texts = []
-        self.compiler = 'dxf'
+        self.extention = '.dxf'
         self.feedline = None
         self.DCleads = None
 
@@ -34,7 +34,7 @@ class DXF(HFSS):
 
     def line(self, start_x, start_y, end_x, end_y, width, **para):
         dx = end_x - start_x
-        dy = start_y - end_y
+        dy = end_y - start_y
         theta = np.arctan2(dy, dx)
         newdx = width / 2 * np.sin(theta)
         newdy = width / 2 * np.cos(theta)
@@ -150,8 +150,8 @@ class DXF(HFSS):
         for i in range(0, len(self.mylist)):
             if self.mylist[i] is not None:
                 draw(self.taglist[i], self.mylist[i])
-        if '.dxf' not in self.project_name:
-            self.project_name += '.dxf'
+        if '.' not in self.project_name:
+            self.project_name += self.extention
         self.q.write(self.project_name)
 
     def add_wirebonds(self, start, stop):
