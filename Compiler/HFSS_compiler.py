@@ -8,7 +8,7 @@ if folder_path not in sys.path:
 import os
 import time
 from datetime import datetime
-import pyaedt
+import ansys.aedt.core as pyaedt
 import numpy as np
 from Builds.Build_universal_functions import *
 
@@ -79,7 +79,7 @@ class HFSS:
     def startup(self):
         self.non_graphical = False
         self.desktop = pyaedt.Desktop(non_graphical=self.non_graphical, new_desktop=False, close_on_exit=False,
-                                      student_version=False)
+                                      student_version=False, version='2025.2')
         self.q = pyaedt.Hfss(project=self.project_name)
         self.modeler = self.q.modeler
         self.unit = 'um'
@@ -163,7 +163,7 @@ class HFSS:
                                                  xsection_orient='Y',
                                                  material=f'{self.metal_name}',
                                                  name=newname(name))
-        taper = self.modeler.thicken_sheet(taper, thickness=self.metal_thickness, bBothSides=True)
+        taper = self.modeler.thicken_sheet(taper, thickness=self.metal_thickness, both_sides=True)
         return taper
 
     # Advance_element: curved polyline

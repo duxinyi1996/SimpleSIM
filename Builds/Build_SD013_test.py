@@ -86,7 +86,7 @@ def Build_013_test(object, lead_number=0):
         for x in  back_command:
             all_command += str(x)
         return x1,y1,all_command
-    x1,y1,all_command = meander_1(x1,y1,x2,y2,total_l,radius=150,x_turns1=1500,x_turns2=1000)
+    x1,y1,all_command = meander_1(x1,y1,x2,y2,total_l,radius=200,x_turns1=1500,x_turns2=1000)
     x_list, y_list = construct(start_x=x1, start_y=y1, shape=all_command)
     center_line, trench = object.CPW_line(x_list, y_list, 
                     width=object.reson_width, gap=object.reson_gap, 
