@@ -85,7 +85,7 @@ class HFSS:
         self.modeler.model_units = self.unit
         self.desktop.disable_autosave()
 
-    def substrate(self, cen_x=0, cen_y=0, dx=4000, dy=4000, up_z=0, name='Substrate'):
+    def substrate(self, cen_x=0, cen_y=0, dx=4000, dy=4000, name='Substrate'):
         up_z = -self.metal_thickness / 2
         position = [cen_x - dx, cen_y - dy, up_z]
         size = [2 * dx, 2 * dy, -self.sub_thickness]

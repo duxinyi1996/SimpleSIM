@@ -1,4 +1,4 @@
-# Modeler_sum: build_chip design SD009
+# Modeler_sum: build_chip design Boulder chip, resonator 1
 from Builds.Build_universal_functions import *
 
 def Build_Boulder(object):
