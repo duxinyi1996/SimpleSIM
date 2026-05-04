@@ -14,7 +14,7 @@ import numpy as np
 
 class KLAYOUT(HFSS):
     def startup(self):
-        self.trap = True
+        self.trap = False
         self.label = True
         self.q = db.Layout()
         self.unit = 1E-6    # data were in 1um unit
@@ -111,12 +111,12 @@ class KLAYOUT(HFSS):
         safe = 150
         d = 10
         s = 3
-        if self.trap:
+        if self.trap and self.gnd is not None:
             print('Adding trap')
-            region1 = self.gnd[0].sized(-safe/self.q.dbu)
-            region2 = (self.gnd[1].snapped(d/self.q.dbu, d/self.q.dbu)).sized(safe/self.q.dbu)
-            region = (region1 - region2).merge()
-            real = create_trap(d, s) & region
+            bbox = self.gnd.bbox()
+            safe_dbu = int(safe / self.q.dbu)
+            safe_region = db.Region(bbox).sized(-safe_dbu)
+            real = create_trap(d, s) & safe_region & self.gnd
             self.mylist += [real]
             self.taglist += ['Trap']
 
@@ -132,21 +132,48 @@ class KLAYOUT(HFSS):
         # print('text', region)
         self.texts += [region.moved(x/self.q.dbu,y/self.q.dbu)]
 
+    def fillet_corners(self, item, radius):
+        """
+        Rounds the corners of a specified KLayout db.Region.
+        
+        Parameters:
+        - item (db.Region or list): The KLayout region(s) to fillet.
+        - radius (float): The radius of the curve in um.
+        """
+        # Handle lists of objects
+        if isinstance(item, list):
+            for obj in item:
+                self.fillet_corners(obj, radius)
+            return
+        # Ensure the item is a KLayout Region
+        if isinstance(item, db.Region):
+            # 1. Convert the radius from um to Database Units (dbu)
+            # self.q.dbu is 0.001 (1nm), so 5um becomes 5000 dbu
+            radius_dbu = int(radius / self.q.dbu)
+            # Number of points to approximate a full circle
+            n_points = 64 
+            # 2. Apply the rounding. 
+            rounded_region = item.round_corners(radius_dbu, radius_dbu, n_points)
+            # 3. OVERWRITE IN-PLACE:
+            item.assign(rounded_region)
+            print(f"[Info] KLAYOUT: Successfully filleted Region with radius {radius}um ({radius_dbu} dbu).")
+        else:
+            print(f"[Warning] KLAYOUT: Object is not a db.Region. Cannot fillet. Type: {type(item)}")
+
     def save(self):
         def draw(tag, items):
             layer = self.q.layer(tag)
             for item in items:
-                self.main.shapes(layer).insert(item)
-                print('Drawing layer:',tag)
-        self.outter_gnd = self.gnd[0]
-        self.inner_gnd = (self.gnd[1]-self.cpw).merge()
-        self.mylist = [self.outter_gnd,
-                  self.feedline,
-                  self.inner_gnd,
+                if item is not None and not item.is_empty():
+                    self.main.shapes(layer).insert(item)
+            print('Drawing layer:', tag)
+        self.mylist = [self.gnd,
+                  self.cpw,
                   self.DCleads,
                   self.texts]
-        self.taglist = ['GND', 'Feedline', 'Reson', 'DCleads','Labels']
-        self.add_trap()
+        self.taglist = ['GND', 'CPW', 'DCleads', 'Labels']
+        if self.trap:
+            self.add_trap()
         for i in range(0, len(self.mylist)):
             if self.mylist[i] is not None:
                 draw(self.taglist[i], self.mylist[i])
@@ -158,11 +185,11 @@ class KLAYOUT(HFSS):
         pass
 
     def tempsave(self):
-        pass
+        self.save()
 
 
 class Myklayout:
-    def create_box(self, **para):
+    def create_box(self, **para):  
         pass
 
     def create_polyline(self, position_list, **para):
@@ -184,10 +211,22 @@ class Myklayout:
         region = get_region(items)
         return region.merge()
 
-    def subtract(self, originals, toBeRemove, **para):
+    def subtract(self, originals, toBeRemove, keep_originals=False, **para):
         region1 = get_region(originals)
         region2 = get_region(toBeRemove)
-        return region1.merge(), region2.merge()
+        result_region = (region1 - region2).merge()
+        if isinstance(originals, db.Region):
+            originals.assign(result_region)
+        elif isinstance(originals, list) and len(originals) > 0 and isinstance(originals[0], db.Region):
+            originals[0].assign(result_region)
+        if not keep_originals:
+            if isinstance(toBeRemove, db.Region):
+                toBeRemove.clear()
+            elif isinstance(toBeRemove, list):
+                for item in toBeRemove:
+                    if isinstance(item, db.Region):
+                        item.clear()
+        return result_region
 
 
 def get_region(items):

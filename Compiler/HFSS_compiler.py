@@ -108,6 +108,8 @@ class HFSS:
 
     # Basic_element: line
     def line(self, start_x, start_y, end_x, end_y, width, bottom_z=0, name='Line'):
+        if abs(start_x - end_x) < 1e-6 and abs(start_y - end_y) < 1e-6:
+            return None
         line = self.modeler.create_polyline(
             [floall([start_x, start_y, bottom_z]), 
              floall([end_x, end_y, bottom_z])],
@@ -200,8 +202,12 @@ class HFSS:
                                       width=width,
                                       bottom_z=bottom_z,
                                       )]
-        polyline = self.modeler.unite(segment)
-        return polyline
+        valid_segments = [s for s in segment if s is not None]
+        if valid_segments:
+            polyline = self.modeler.unite(valid_segments)
+            return polyline
+        else:
+            return None
 
     # Advance_element: CPW lines
     def CPW_line(self, x_list, y_list, width, gap, radius=0.0, name='CPWline', end=[0,0]):
@@ -463,7 +469,9 @@ class HFSS:
                                                            [x_start, y_start - d1 / 2, 0]])
         self.modeler.subtract([self.modeler['Gnd_0']], empty, keep_originals=False)
 
-    def build_region(self,dx,dy,cen_x=0,cen_y=0):
+    def build_region(self,dx,dy,dz=None,cen_x=0,cen_y=0):
+        if dz is None:
+            dz = 10*self.sub_thickness
         '''Huge air box'''
         # self.modeler.create_air_region(x_pos=10, y_pos=10, z_pos=500, x_neg=10, y_neg=10, z_neg=10, is_percentage=True)
         '''Finite air box->vacuum'''
@@ -472,10 +480,10 @@ class HFSS:
         # region.material_name = 'vacuum'
         '''Handmade vacuum box'''
         up_z = self.metal_thickness / 2 - 2*self.sub_thickness 
-        position = [cen_x - dx, cen_y - dy, up_z]
-        size = [2 * dx, 2 * dy, 5*self.sub_thickness]
+        position = [cen_x - dx, cen_y - dy, up_z-dz]
+        size = [2 * dx, 2 * dy, 2 * dz]
         self.modeler.create_box(
-            position=position, dimensions_list=size,
+            origin=position, sizes=size,
             name=f"Region",
             material=f"vacuum")
         color = (128, 128, 128)
@@ -502,6 +510,7 @@ class HFSS:
                                               isinside=False, maxlength=unit, maxel=None, meshop_name='finger_cap_mesh')
         mesh = self.q.mesh.assign_length_mesh(self.modeler.get_objects_w_string('inductor',case_sensitive=False),
                                               isinside=False, maxlength=unit, maxel=None, meshop_name='inductor_mesh')
+        
     def beauty(self):
         region_list = self.modeler.get_objects_w_string('region',case_sensitive=False)
         self.set_appearance(name=region_list,color=(200,200,200),transparency=0.9)
@@ -514,6 +523,25 @@ class HFSS:
         dc_list = self.modeler.get_objects_w_string('finger_cap',case_sensitive=False) 
         dc_list += self.modeler.get_objects_w_string('inductor',case_sensitive=False)
         self.set_appearance(name=dc_list,color=(128,0,128),transparency=0)
+
+    def fillet_corners(self, object_name, radius):
+        """Rounds the corners of a specified object."""
+        if isinstance(object_name, list):
+            for obj in object_name:
+                self.fillet_corners(obj, radius)
+            return
+        try:
+            vertices = self.modeler.get_object_vertices(object_name)
+            vertex_ids = [v.id for v in vertices]
+            
+            if vertex_ids:
+                self.modeler.fillet(object_name, vertex_ids, radius)
+                print(f"[Info] Successfully filleted {object_name} with radius {radius}um.")
+            else:
+                print(f"[Warning] No vertices found to fillet on {object_name}.")
+                
+        except Exception as e:
+            print(f"[Error] Failed to fillet {object_name}. Error: {e}")
 
     def save(self):
         # self.FakeWirebonds()

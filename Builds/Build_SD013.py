@@ -159,6 +159,6 @@ def Build_013(object, lead_number=0):
     object.gnd = object.modeler.subtract(object.gnd, object.toBeRemove, keep_originals=False)
     object.cpw = object.modeler.unite(object.toBeAdd)
     object.add_label(2600,3000)
-    object.save()
+    object.tempsave()
 
 
